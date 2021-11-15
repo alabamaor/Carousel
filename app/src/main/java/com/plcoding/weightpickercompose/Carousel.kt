@@ -5,24 +5,24 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Typeface
-import android.os.Build
 import android.util.Log
+import android.view.MotionEvent
+import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.runtime.*
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.nativeCanvas
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.input.pointer.pointerInteropFilter
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
-import androidx.core.graphics.drawable.DrawableCompat
 import kotlin.math.*
 
 
+@ExperimentalComposeUiApi
 @Composable
 fun Carousel(
     modifier: Modifier = Modifier,
@@ -34,23 +34,27 @@ fun Carousel(
     initialStep: Int = (items.size - 1) / 2,
     onChange: (Int) -> Unit
 ) {
-    var min = minStep
-    var max = maxStep * style.step
-    var initial = initialStep * style.step
+    val step = 20
+    val middlePoint = -90
+    val min = minStep
+    val max = maxStep * step
+    val initial = initialStep * step
 
-    var chosenItemRadius: Float
-    var itemRadius: Float
+    var chosenItemRadius = 14f
+    var itemRadius = 14f
     var outerRadius: Float
     var innerRadius: Float
-    val unchosenTextSize: TextUnit = 18.sp
-    val chosenTextSize: TextUnit = 22.sp
 
 
-    var step = 14
     val radius = style.radius
 
     val scaleWidth = style.scaleWidth
     var currentValue = initial
+
+    var action by remember {
+        mutableStateOf(MotionEvent.ACTION_CANCEL)
+    }
+
     var center by remember {
         mutableStateOf(Offset.Zero)
     }
@@ -72,95 +76,93 @@ fun Carousel(
     var isDrag by remember {
         mutableStateOf(false)
     }
+
+    val animationTargetState = remember { mutableStateOf(1f) }
+
+    val animatedFloatState = animateFloatAsState(
+        // Whenever the target value changes, new animation
+        // will start to the new target value
+        targetValue = animationTargetState.value,
+        animationSpec = tween(
+            durationMillis = 2000,
+            easing = LinearOutSlowInEasing
+        )
+    )
+
+
+
     Canvas(
         modifier = modifier
-            .pointerInput(true) {
-                detectTapGestures(
-//                onTap = {offset ->
-//                    dragStartedAngle = atan2(
-//                        circleCenter.x - offset.x,
-//                        circleCenter.y - offset.y
-//                    ) * (180f / PI.toFloat())
-//
-//                    angle = dragStartedAngle.coerceIn(
-//                        minimumValue = initial - max.toFloat(),
-//                        maximumValue = initial - min.toFloat()
-//                    )
-//                },
-
-                    onLongPress = { offset ->
-                        Log.i("alabama", "onLongPress")
-                    },
-                    onTap = { offset ->
-                        val touchAngle = atan2(
-                            circleCenter.x - offset.x,
-                            circleCenter.y - offset.y
-                        ) * (180f / PI.toFloat())
-
-                        val newAngle = oldAngle + (touchAngle - dragStartedAngle)
-                        angle = newAngle.coerceIn(
-                            minimumValue = initial - max.toFloat(),
-                            maximumValue = initial - min.toFloat()
-                        )
-
-                        var a = angle.roundToInt() / style.step
-                        if (angle % style.step >= style.step / 2) {
-                            a++
-                        }
-                        angle = (a * style.step).toFloat()
-
-                        Log.i(
-                            "alabama - detectTap",
-                            "offset: $offset " +
-                                    "angle: $angle " +
-                                    "dragStartedAngle: $dragStartedAngle "
-                        )
-                        oldAngle = angle
-                    }
-                )
-            }.pointerInput(true) {
-                detectDragGestures(
-                    onDragStart = { offset ->
+            .pointerInteropFilter {
+                when (it.action) {
+                    MotionEvent.ACTION_DOWN -> {
                         dragStartedAngle = -atan2(
-                            circleCenter.x - offset.x,
-                            circleCenter.y - offset.y
+                            circleCenter.x - it.x,
+                            circleCenter.y - it.y
                         ) * (180f / PI.toFloat())
-                        isDrag = true
-                        Log.i(
-                            "alabama - onDragStart ",
-                            "dragStartedAngle: $dragStartedAngle " +
-                                    "offset: $offset"
-                        )
-                    },
-                    onDragEnd = {
-                        var a = angle.roundToInt() / style.step
-                        if (angle % style.step >= style.step / 2) {
-                            a++
+                        Log.i("alabama - ACTION_DOWN ", "dragStartedAngle: $dragStartedAngle ")
+                        animationTargetState.value = 0.5f
+                    }
+                    MotionEvent.ACTION_MOVE -> {
+                        val touchAngle = -atan2(
+                            circleCenter.x - it.x,
+                            circleCenter.y - it.y
+                        ) * (180f / PI.toFloat())
+                        var str = "abs(dragStartedAngle): ${abs(dragStartedAngle).roundToInt()} " +
+                                "abs(touchAngle): ${abs(touchAngle).roundToInt()} "
+
+                        if (abs(dragStartedAngle).roundToInt() != abs(touchAngle).roundToInt()) {
+                            isDrag = true
+                            val newAngle = oldAngle + (touchAngle - dragStartedAngle)
+                            angle = newAngle.coerceIn(
+                                minimumValue = initial - max.toFloat(),
+                                maximumValue = initial - min.toFloat()
+                            )
+                            str += "newAngle: $newAngle"
                         }
-                        angle = (a * style.step).toFloat()
+                        Log.i(
+                            "alabama - ACTION_MOVE ",
+                            str
+                        )
+                    }
+                    MotionEvent.ACTION_UP -> {
+                        if (isDrag) {
+                            var a = angle.roundToInt() / step
+                            if (angle % step >= step / 2) {
+                                a++
+                            }
+                            angle = (a * step).toFloat()
+                            isDrag = false
+                            Log.i("alabama - ACTION_UP", "isDrag: $isDrag angle: $angle")
+                        } else {
+                            val newAngle = oldAngle - dragStartedAngle
+                            angle = newAngle.coerceIn(
+                                minimumValue = initial - max.toFloat(),
+                                maximumValue = initial - min.toFloat()
+                            )
+
+                            var a = angle.roundToInt() / step
+                            if (angle % step >= step / 2) {
+                                a++
+                            }
+                            angle = (a * step).toFloat()
+
+                            Log.i(
+                                "alabama - ACTION_UP", "isDrag: $isDrag " +
+                                        "angle: $angle " +
+                                        "oldAngle: $oldAngle " +
+                                        "dragStartedAngle: $dragStartedAngle "
+                            )
+                        }
                         oldAngle = angle
                         isDrag = false
-                        Log.i(
-                            "alabama - onDragEnd",
-                            "oldAngle: $oldAngle" +
-                                    "angleInDeg: " + radiansToDegrees(oldAngle) +
-                                    "round angleInDeg: " + radiansToDegrees(oldAngle).roundToInt()
-                        )
+                        animationTargetState.value = 1f
                     }
-                ) { change, _ ->
-                    val touchAngle = -atan2(
-                        circleCenter.x - change.position.x,
-                        circleCenter.y - change.position.y
-                    ) * (180f / PI.toFloat())
-
-                    val newAngle = oldAngle + (touchAngle - dragStartedAngle)
-                    angle = newAngle.coerceIn(
-                        minimumValue = initial - max.toFloat(),
-                        maximumValue = initial - min.toFloat()
-                    )
-
-                    onChange((initial - angle).roundToInt())
                 }
+                onChange((initial - angle).roundToInt())
+                action = it.action
+                true
+
             }
     ) {
         center = this.center
@@ -168,113 +170,76 @@ fun Carousel(
             center.x,
             scaleWidth.toPx() / 2f + radius.toPx()
         )
-
         chosenItemRadius = (this.size.width / 8f)
-        itemRadius = (this.size.width / 18f)
+        itemRadius = (this.size.width / 16f)
         outerRadius = radius.toPx() + scaleWidth.toPx() / 2f
         innerRadius = radius.toPx() - scaleWidth.toPx() / 2f
 
-
-
-        drawContext.canvas.nativeCanvas.apply {
-//            drawCircle(
-//                circleCenter.x,
-//                circleCenter.y,
-//                radius.toPx(),
-//                Paint().apply {
-//                    strokeWidth = scaleWidth.toPx()
-//                    color = Color.WHITE
-//                    setStyle(Paint.Style.STROKE)
-//                    setShadowLayer(
-//                        60f,
-//                        0f,
-//                        0f,
-//                        Color.argb(50, 0, 0, 0)
-//                    )
-//                }
-//            )
-        }
-        // Draw lines
         for (i in min..max) {
             val angleInRad = (i - initial + angle - 90) * ((PI / 180f).toFloat())
-//            val lineType = when {
-//                i % 10 == 0 -> LineType.TenStep
-//                i % 5 == 0 -> LineType.FiveStep
-//                else -> LineType.Normal
-//            }
-//            val lineLength = when(lineType) {
-//                LineType.Normal -> style.normalLineLength.toPx()
-//                LineType.FiveStep -> style.fiveStepLineLength.toPx()
-//                LineType.TenStep -> style.tenStepLineLength.toPx()
-//            }
-//            val lineColor = when(lineType) {
-//                LineType.Normal -> style.normalLineColor
-//                LineType.FiveStep -> style.fiveStepLineColor
-//                LineType.TenStep -> style.tenStepLineColor
-//            }
-//            val lineStart = Offset(
-//                x = (outerRadius - lineLength) * cos(angleInRad) + circleCenter.x,
-//                y = (outerRadius - lineLength) * sin(angleInRad) + circleCenter.y
-//            )
-//            val lineEnd = Offset(
-//                x = outerRadius * cos(angleInRad) + circleCenter.x,
-//                y = outerRadius * sin(angleInRad) + circleCenter.y
-//            )
 
             drawContext.canvas.nativeCanvas.apply {
-                if (i % style.step == 0) {
-//                    Log.i(
-//                        "alabama",
-//                        "angleInRad: $angleInRad, " +
-//                                "angleInDeg: " + radiansToDegrees(angleInRad) +
-//                                "round angleInDeg: " + radiansToDegrees(angleInRad).roundToInt() +
-//                                "text: ${items[i / style.step].unSelectedText}"
-//                    )
+                if (i % step == 0) {
                     val x = innerRadius * cos(angleInRad) + circleCenter.x
                     val y = innerRadius * sin(angleInRad) + circleCenter.y
 
-                    drawCircle(
-                        x,
-                        y,
-                        if (radiansToDegrees(radians = angleInRad).roundToInt() == -90 && !isDrag) chosenItemRadius else itemRadius,
-                        Paint().apply {
-                            color = items[i / style.step].color
-                        }
-                    )
+                    if (radiansToDegrees(radians = angleInRad).roundToInt() == middlePoint && !isDrag) {
 
-                    if (radiansToDegrees(radians = angleInRad).roundToInt() == -90 && !isDrag) {
                         drawCircle(
                             x,
                             y,
-                            chosenItemRadius * 1.1f,
+                            chosenItemRadius * animatedFloatState.value * 1.1f,
                             Paint().apply {
-                                color = items[i / style.step].color
+                                color = items[i / step].color
                                 alpha = 80
                             }
                         )
-                        drawText(
-                            items[i / style.step].selectedTextTop,
+                        drawCircle(
                             x,
-                            y - unchosenTextSize.toPx() / 2,
+                            y,
+                            chosenItemRadius * animatedFloatState.value,
+                            Paint().apply {
+                                color = items[i / step].color
+                            }
+                        )
+
+                        drawText(
+                            items[i / step].selectedTextTop,
+                            x,
+                            y - itemRadius / 2,
                             Paint().apply {
                                 color = style.chosenTextColor
-                                textSize = chosenTextSize.value
+                                textSize = chosenItemRadius * animatedFloatState.value * 0.5f
                                 textAlign = Paint.Align.CENTER
                             }
                         )
                         drawText(
-                            items[i / style.step].selectedTextBottom,
+                            items[i / step].selectedTextBottom,
                             x,
                             y + style.textSize.toPx() / 2 + 10.dp.toPx(),
                             Paint().apply {
                                 color = style.chosenTextColor
-                                textSize = chosenTextSize.value
+                                textSize = chosenItemRadius * animatedFloatState.value * 0.5f
                                 typeface = Typeface.DEFAULT_BOLD
                                 textAlign = Paint.Align.CENTER
                             }
                         )
-                    } else {
-                        getBitmapFromVectorDrawable(context, items[i / style.step].icon)?.let {
+                    } else if ((radiansToDegrees(radians = angleInRad) < middlePoint + step / 2 && isDrag) &&
+                        (radiansToDegrees(radians = angleInRad) > middlePoint - step / 2 && isDrag)
+                    ) {
+//                        var a = (radiansToDegrees(radians = angleInRad) - middlePoint)
+//                        if (a > 0) {
+//                            a *= -1
+//                        }
+                        drawCircle(
+                            x,
+                            y,
+                            itemRadius, //(itemRadius + (3.1 * a)).toFloat(),
+                            Paint().apply {
+                                color = items[i / step].color
+                            }
+                        )
+                        getBitmapFromVectorDrawable(context, items[i / step].icon)?.let {
                             drawBitmap(
                                 it,
                                 x - it.width / 2,
@@ -283,22 +248,52 @@ fun Carousel(
                                 })
                         }
                         drawText(
-                            items[i / style.step].unSelectedText,
+                            items[i / step].unSelectedText,
                             x,
                             y + chosenItemRadius,
                             Paint().apply {
                                 color = style.textColor
-                                textSize = unchosenTextSize.value
+                                textSize = (itemRadius) * 0.7f
+                                textAlign = Paint.Align.CENTER
+                            }
+                        )
+
+                    } else {
+
+                        drawCircle(
+                            x,
+                            y,
+                            itemRadius,
+                            Paint().apply {
+                                color = items[i / step].color
+                            }
+                        )
+                        getBitmapFromVectorDrawable(context, items[i / step].icon)?.let {
+                            drawBitmap(
+                                it,
+                                x - it.width / 2,
+                                y - it.height / 2,
+                                Paint().apply {
+                                })
+                        }
+                        drawText(
+                            items[i / step].unSelectedText,
+                            x,
+                            y + chosenItemRadius,
+                            Paint().apply {
+                                color = style.textColor
+                                textSize = itemRadius * 0.7f
                                 textAlign = Paint.Align.CENTER
                             }
                         )
                     }
                 }
+//                animationTargetState.value = 0f
+
             }
         }
     }
 }
-
 
 fun degreesToRadians(degrees: Float): Double {
     return degrees * PI / 180.0

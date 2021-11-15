@@ -1,22 +1,27 @@
 package com.plcoding.weightpickercompose
 
+import android.graphics.Color
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-import android.graphics.Color
-import android.util.Log
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import kotlin.random.Random
 
 class MainActivity : ComponentActivity() {
+
+    @ExperimentalComposeUiApi
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -68,11 +73,11 @@ class MainActivity : ComponentActivity() {
 
             var rnd = Random.nextInt(0, items.size)
 
-            Log.i("alabama", "screenWidth: $screenWidth")
             Box(
                 modifier = Modifier
                     .fillMaxSize()
             ) {
+//                SetupAnimationLayout()
                 Carousel(
                     items = items,
 //                    initialStep = rnd,
