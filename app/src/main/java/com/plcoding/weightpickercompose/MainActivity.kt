@@ -38,36 +38,43 @@ class MainActivity : ComponentActivity() {
                     icon = R.drawable.ic_1
                     color = Color.BLUE
                     unSelectedText = "תדלוק"
+                    selectedTextBottom= "תדלוק"
                 },
                 CarouselItem().apply {
                     icon = R.drawable.ic_2
                     color = Color.YELLOW
                     unSelectedText = "חניונים"
+                    selectedTextBottom = "חניונים"
                 },
                 CarouselItem().apply {
                     icon = R.drawable.ic_3
                     color = Color.GREEN
                     unSelectedText = "חנייה"
+                    selectedTextBottom = "חנייה"
                 },
                 CarouselItem().apply {
                     icon = R.drawable.ic_4
                     color = Color.MAGENTA
                     unSelectedText = "ביטוח"
+                    selectedTextBottom = "ביטוח"
                 },
                 CarouselItem().apply {
                     icon = R.drawable.ic_5
                     color = Color.BLACK
                     unSelectedText = "תחבורה"
+                    selectedTextBottom = "תחבורה"
                 },
                 CarouselItem().apply {
                     icon = R.drawable.ic_6
                     color = Color.GRAY
                     unSelectedText = "חילוץ"
+                    selectedTextBottom = "חילוץ"
                 },
                 CarouselItem().apply {
                     icon = R.drawable.ic_7
                     color = Color.LTGRAY
                     unSelectedText = "שטיפומט"
+                    selectedTextBottom = "שטיפומט"
                 }
             )
 
