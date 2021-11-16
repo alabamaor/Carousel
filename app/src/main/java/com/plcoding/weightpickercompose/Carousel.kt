@@ -320,11 +320,11 @@ fun getCurrentItemByClick(
 }
 
 fun calcClosestAngle(angle: Float, step: Int): Float {
-    Log.i("alabama",  "(angle % step): ${(angle % step)}")
+    Log.i("alabama", "(angle % step): ${(angle % step)}")
     var tempAngle = angle.roundToInt() / step
     if ((angle % step) >= step / 2) {
         tempAngle++
-    }else if (abs(angle % step) >= step / 2) {
+    } else if (abs(angle % step) >= step / 2) {
         tempAngle--
     }
     return (tempAngle * step).toFloat()
