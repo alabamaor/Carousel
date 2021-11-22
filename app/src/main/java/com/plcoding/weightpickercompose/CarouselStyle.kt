@@ -8,7 +8,7 @@ import androidx.compose.ui.unit.sp
 
 data class CarouselStyle(
     val scaleWidth: Dp = 70.dp,
-    val radius: Dp = 300.dp,
+    val radius: Dp = 350.dp,
     val textColor: Int = Color.BLACK,
     val chosenTextColor: Int = Color.WHITE,
     val textSize: TextUnit = 18.sp,
