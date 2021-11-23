@@ -5,7 +5,6 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -14,8 +13,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.launch
-import kotlin.math.roundToInt
 import kotlin.random.Random
 
 var items: Array<CarouselItem> = arrayOf(
@@ -84,7 +81,7 @@ class MainActivity : ComponentActivity() {
             val screenWidth = configuration.screenWidthDp.dp
 
             var chosenCarouselValue by remember {
-                mutableStateOf(80)
+                mutableStateOf(items[items.size/2])
             }
 
             var rnd = Random.nextInt(0, items.size)
@@ -129,12 +126,16 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier
                         .fillMaxWidth()
                         .fillMaxHeight(fraction = 0.25f)
-                        .align(Alignment.BottomCenter)
-                ) {
-                    chosenCarouselValue = it
-                }
+                        .align(Alignment.BottomCenter),
+                    onItemSelected = { chosenCarouselValue = it },
+                    onItemSelectedPressed = onItemSelectedPressed()
+                )
             }
         }
+    }
+
+    private fun onItemSelectedPressed() {
+
     }
 
 }

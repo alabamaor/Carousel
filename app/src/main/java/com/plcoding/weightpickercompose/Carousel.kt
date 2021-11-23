@@ -5,17 +5,19 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Typeface
-import android.view.MotionEvent
+import android.util.Log
 import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.runtime.*
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.nativeCanvas
-import androidx.compose.ui.input.pointer.pointerInteropFilter
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import kotlin.math.*
@@ -31,7 +33,8 @@ fun Carousel(
     minStep: Int = 0,
     maxStep: Int = (items.size - 1),
     initialStep: Int = (items.size - 1) / 2,
-    onChange: (Int) -> Unit
+    onItemSelected: (CarouselItem) -> Unit,
+    onItemSelectedPressed: Unit
 ) {
     val step = 20
     val middlePoint = -90
@@ -44,20 +47,12 @@ fun Carousel(
 
     val scaleWidth = style.scaleWidth
     val radius = style.radius
-    var innerRadius: Float = 0f
+    var innerRadius = 0f
 
-    var isOnCirclePress = false
 
-    var currentItem = 0
-
-    var action by remember {
-        mutableStateOf(MotionEvent.ACTION_CANCEL)
+    var currentItem by remember {
+        mutableStateOf(initialStep)
     }
-
-    var animated by remember {
-        mutableStateOf(0)
-    }
-
     var center by remember {
         mutableStateOf(Offset.Zero)
     }
@@ -67,12 +62,10 @@ fun Carousel(
     var angle by remember {
         mutableStateOf(0f)
     }
-    var dragStartedAngle by remember {
+    var startedAngle by remember {
         mutableStateOf(0f)
     }
-    var valueAnimation by remember {
-        mutableStateOf(0f)
-    }
+
     var oldAngle by remember {
         mutableStateOf(angle)
     }
@@ -80,102 +73,109 @@ fun Carousel(
         mutableStateOf(false)
     }
 
-//
-//    val FRAME_DELAY = 200 // in ms
-//
-//    val mBitmapIndex = AtomicInteger()
-//    var mView: View
-//    var mThread: Thread
-//
-//    val mBitmaps = arrayOf(
-//        getBitmapFromVectorDrawable(context, R.drawable.ic_accessibility),
-//        getBitmapFromVectorDrawable(context, R.drawable.ic_accessibility1)
-//    )
+    var itemSelected:CarouselItem? = items[initialStep]
 
-    val animationTargetState = remember { mutableStateOf(0.5f) }
+    var animationTargetState = remember { mutableStateOf(1f) }
 
-    var animatedFloatState = animateFloatAsState(
+    var animateFloat = animateFloatAsState(
         // Whenever the target value changes, new animation
         // will start to the new target value
         targetValue = animationTargetState.value,
         animationSpec = tween(
-            durationMillis = 2000,
+            durationMillis = 300,
             easing = LinearOutSlowInEasing
         )
     )
-
     Canvas(
         modifier = modifier
-            .pointerInteropFilter {
-                when (it.action) {
-                    MotionEvent.ACTION_DOWN -> {
+            .pointerInput(true) {
+                detectTapGestures(
+                    onPress = {
+//                        Log.i("alabama", "onPress")
                         val newAngle = -atan2(
                             circleCenter.x - it.x,
                             circleCenter.y - it.y
                         ) * (180f / PI.toFloat())
-
-//                        animationTargetState.value = 0.5f
-                        isOnCirclePress = (getCurrentItemByClick(
+                        startedAngle = newAngle
+                        animationTargetState.value = 0.7f
+                    },
+                    onTap = {
+//                        Log.i("alabama", "onTap")
+                        itemSelected = getCurrentItemByClick(
                             x = it.x,
                             y = it.y,
                             xRadius = itemRadius + 20,
-                            yRadius = chosenItemRadius+ 20,
+                            yRadius = chosenItemRadius + 20,
                             items = items
-                        ) != null)
-                        dragStartedAngle = newAngle
+                        )
+                        itemSelected?.let { item->
+                            angle = calcClosestAngle(
+                                angleRoundToInt = (oldAngle - startedAngle).roundToInt(),
+                                step = step
+                            ).coerceIn(
+                                minimumValue = initial - max.toFloat(),
+                                maximumValue = initial - min.toFloat()
+                            )
 
-                    }
-                    MotionEvent.ACTION_MOVE -> {
+                            onItemSelected(item)
+                            Log.i("alabama", "onItemSelected:${item.unSelectedText}")
+                            if (item == items[currentItem]){
+                                Log.i("alabama", "itemClicked:${item.unSelectedText}")
+                                onItemSelectedPressed
+                            }
+
+                            oldAngle = angle
+                            isDrag = false
+                        }
+                            animationTargetState.value = 1f
+
+                    },
+//                    onLongPress = { offset ->
+//                        Log.i("alabama", "onLongPress")
+//                        animationTargetState.value = 1f
+//                    },
+                )
+            }
+            .pointerInput(true) {
+                detectDragGestures(
+                    onDrag = { change, offset ->
+//                        Log.i("alabama", "onDrag")
                         val touchAngle = -atan2(
-                            circleCenter.x - it.x,
-                            circleCenter.y - it.y
+                            circleCenter.x - change.position.x,
+                            circleCenter.y - change.position.y
                         ) * (180f / PI.toFloat())
-                        if (abs(dragStartedAngle).roundToInt() != abs(touchAngle).roundToInt()) {
+                        if (abs(startedAngle).roundToInt() != abs(touchAngle).roundToInt()) {
                             isDrag = true
-                            val newAngle = oldAngle + (touchAngle - dragStartedAngle)
+                            val newAngle = oldAngle + (touchAngle - startedAngle)
                             angle = newAngle.coerceIn(
                                 minimumValue = initial - max.toFloat(),
                                 maximumValue = initial - min.toFloat()
                             )
                         }
-                    }
-                    MotionEvent.ACTION_UP -> {
-                        val newAngle = if (!isDrag && isOnCirclePress) {
-                            oldAngle - dragStartedAngle
-                        } else {
-                            angle
-                        }
-                        angle = calcClosestAngle(angle = newAngle, step = step).coerceIn(
+                    },
+//                    onDragCancel = { Log.i("alabama", "onDragCancel") },
+//                    onDragStart = { offset -> Log.i("alabama", "onDragStart") },
+                    onDragEnd = {
+//                        Log.i("alabama", "onDragEnd")
+
+                        angle = calcClosestAngle(
+                            angleRoundToInt = angle.roundToInt(),
+                            step = step
+                        ).coerceIn(
                             minimumValue = initial - max.toFloat(),
                             maximumValue = initial - min.toFloat()
                         )
+
                         oldAngle = angle
                         isDrag = false
-                        valueAnimation = 0f
+                        animationTargetState.value = 1f
+                        currentItem = initialStep - (angle/step).toInt()
+                        Log.i("alabama", "onItemSelected:${items[currentItem].unSelectedText}")
+                        onItemSelected(items[currentItem])
                     }
-                }
-                onChange((initial - angle).roundToInt())
-                action = it.action
-                true
-
+                )
             }
     ) {
-//        mThread = object : Thread() {
-//            override fun run() {
-//                while (true) {
-//                    if (animated >= 1000) animated = 0
-//                    animated += 1
-//                    try {
-//                        sleep(FRAME_DELAY.toLong())
-//                    } catch (e: InterruptedException) {
-//                        e.printStackTrace()
-//                    }
-//                    mBitmapIndex.incrementAndGet()
-//                }
-//            }
-//        }
-//        mThread.start()
-
         center = this.center
         circleCenter = Offset(
             center.x,
@@ -189,21 +189,19 @@ fun Carousel(
             val angleInRad = (i - initial + angle - 90) * ((PI / 180f).toFloat())
 
             drawContext.canvas.nativeCanvas.apply {
+
                 if (i % step == 0) {
                     val x = innerRadius * cos(angleInRad) + circleCenter.x
                     val y = innerRadius * sin(angleInRad) + circleCenter.y
 
                     items[i / step].x = x
                     items[i / step].y = y
-
                     if (radiansToDegrees(radians = angleInRad).roundToInt() == middlePoint && !isDrag) {
-
-//                        animationTargetState.value = 0.5f
                         currentItem = (i / step)
                         drawCircle(
                             x,
                             y,
-                            chosenItemRadius * animatedFloatState.value * 1.2f + valueAnimation,
+                            chosenItemRadius * animateFloat.value * 1.2f,
                             Paint().apply {
                                 color = items[i / step].color
                                 alpha = 50
@@ -212,7 +210,7 @@ fun Carousel(
                         drawCircle(
                             x,
                             y,
-                            chosenItemRadius * animatedFloatState.value + valueAnimation,
+                            chosenItemRadius * animateFloat.value,
                             Paint().apply {
                                 color = items[i / step].color
                             }
@@ -224,7 +222,7 @@ fun Carousel(
                             y - itemRadius / 2,
                             Paint().apply {
                                 color = style.chosenTextColor
-                                textSize = chosenItemRadius * animatedFloatState.value * 0.4f
+                                textSize = chosenItemRadius * animateFloat.value * 0.4f
                                 textAlign = Paint.Align.CENTER
                             }
                         )
@@ -234,12 +232,11 @@ fun Carousel(
                             y + style.textSize.toPx() / 2 + 10.dp.toPx(),
                             Paint().apply {
                                 color = style.chosenTextColor
-                                textSize = chosenItemRadius * animatedFloatState.value * 0.4f
+                                textSize = chosenItemRadius * animateFloat.value * 0.4f
                                 typeface = Typeface.DEFAULT_BOLD
                                 textAlign = Paint.Align.CENTER
                             }
                         )
-                        animationTargetState.value = 1f
                     } else if ((radiansToDegrees(radians = angleInRad) < middlePoint + step / 2 && isDrag) &&
                         (radiansToDegrees(radians = angleInRad) > middlePoint - step / 2 && isDrag)
                     ) {
@@ -287,14 +284,6 @@ fun Carousel(
                                 Paint().apply {
                                 })
                         }
-//                        mBitmaps[abs(mBitmapIndex.get() % mBitmaps.size)]?.let {
-//                            drawBitmap(
-//                                it,
-//                                x - 100,
-//                                y - 100,
-//                                null
-//                            )
-//                        }
                         drawText(
                             items[i / step].unSelectedText,
                             x,
@@ -337,12 +326,12 @@ fun getCurrentItemByClick(
     return null
 }
 
-fun calcClosestAngle(angle: Float, step: Int): Float {
-    var tempAngle = angle.roundToInt() / step
-    if ((angle.roundToInt() % step) >= step / 2) {
-        tempAngle++// 0
-     } else if (abs(angle.roundToInt() % step) >= step / 2) {
-        tempAngle-- // -2
+fun calcClosestAngle(angleRoundToInt: Int, step: Int): Float {
+    var tempAngle = angleRoundToInt / step
+    if ((angleRoundToInt % step) >= step / 2) {
+        tempAngle++
+    } else if (abs(angleRoundToInt % step) >= step / 2) {
+        tempAngle--
     }
     return (tempAngle * step).toFloat()
 }
