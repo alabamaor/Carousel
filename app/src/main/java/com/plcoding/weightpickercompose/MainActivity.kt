@@ -1,6 +1,7 @@
 package com.plcoding.weightpickercompose
 
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
@@ -10,51 +11,53 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import kotlin.random.Random
+import kotlin.time.ExperimentalTime
 
 var items: Array<CarouselItem> = arrayOf(
     CarouselItem().apply {
         icon = R.drawable.ic_1
-        color = android.graphics.Color.BLUE
+        color = android.graphics.Color.argb(255, 246,  103,  119)
         unSelectedText = "תדלוק"
         selectedTextBottom = "תדלוק"
     },
     CarouselItem().apply {
         icon = R.drawable.ic_2
-        color = android.graphics.Color.YELLOW
+        color = android.graphics.Color.argb(255, 131, 188,255)
         unSelectedText = "חניונים"
         selectedTextBottom = "חניונים"
     },
     CarouselItem().apply {
         icon = R.drawable.ic_3
-        color = android.graphics.Color.GREEN
+        color = android.graphics.Color.argb(255, 48,108,234)
         unSelectedText = "חנייה"
         selectedTextBottom = "חנייה"
     },
     CarouselItem().apply {
         icon = R.drawable.ic_4
-        color = android.graphics.Color.MAGENTA
+        color = android.graphics.Color.argb(255, 237,  184,  121)
         unSelectedText = "ביטוח"
         selectedTextBottom = "ביטוח"
     },
     CarouselItem().apply {
         icon = R.drawable.ic_5
-        color = android.graphics.Color.BLACK
+        color = android.graphics.Color.argb(255, 73, 197, 181)
         unSelectedText = "תחבורה"
         selectedTextBottom = "תחבורה"
     },
     CarouselItem().apply {
         icon = R.drawable.ic_6
-        color = android.graphics.Color.GRAY
+        color = android.graphics.Color.argb(255, 255,120,62)
         unSelectedText = "חילוץ"
         selectedTextBottom = "חילוץ"
     },
     CarouselItem().apply {
         icon = R.drawable.ic_7
-        color = android.graphics.Color.LTGRAY
+        color = android.graphics.Color.argb(255, 245,25,145)
         unSelectedText = "שטיפומט"
         selectedTextBottom = "שטיפומט"
     }
@@ -69,6 +72,7 @@ var selectedScreen: MutableState<CarouselItem?> = mutableStateOf(items[items.siz
 class MainActivity : ComponentActivity() {
 
 
+    @ExperimentalTime
     @ExperimentalComposeUiApi
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -114,7 +118,7 @@ class MainActivity : ComponentActivity() {
                         cardWidth = (screenWidth.value*0.9).dp,
                         cardHeight = (screenHeight.value*0.63).dp,
                         screens = items,
-                        selectedScreen = selectedScreen.value,
+                        selectedScreen = chosenCarouselValue,
                         onSelectedScreenChanged = ::onSelectedCategoryChanged)
                 }
 
@@ -128,14 +132,14 @@ class MainActivity : ComponentActivity() {
                         .fillMaxHeight(fraction = 0.25f)
                         .align(Alignment.BottomCenter),
                     onItemSelected = { chosenCarouselValue = it },
-                    onItemSelectedPressed = onItemSelectedPressed()
+                    onItemSelectedPressed = { onItemSelectedPressed() }
                 )
             }
         }
     }
 
     private fun onItemSelectedPressed() {
-
+        Toast.makeText(applicationContext, "click", Toast.LENGTH_SHORT).show()
     }
 
 }

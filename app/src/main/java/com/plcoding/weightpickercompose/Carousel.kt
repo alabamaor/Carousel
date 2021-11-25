@@ -5,6 +5,8 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Typeface
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
@@ -21,8 +23,10 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import kotlin.math.*
+import kotlin.time.ExperimentalTime
 
 
+@ExperimentalTime
 @ExperimentalComposeUiApi
 @Composable
 fun Carousel(
@@ -34,7 +38,7 @@ fun Carousel(
     maxStep: Int = (items.size - 1),
     initialStep: Int = (items.size - 1) / 2,
     onItemSelected: (CarouselItem) -> Unit,
-    onItemSelectedPressed: Unit
+    onItemSelectedPressed: () -> Unit
 ) {
     val step = 20
     val middlePoint = -90
@@ -49,6 +53,7 @@ fun Carousel(
     val radius = style.radius
     var innerRadius = 0f
 
+    val handler = Handler(Looper.myLooper()!!)
 
     var currentItem by remember {
         mutableStateOf(initialStep)
@@ -69,11 +74,16 @@ fun Carousel(
     var oldAngle by remember {
         mutableStateOf(angle)
     }
+
     var isDrag by remember {
         mutableStateOf(false)
     }
 
-    var itemSelected:CarouselItem? = items[initialStep]
+    var isTap by remember {
+        mutableStateOf(false)
+    }
+
+    var itemSelected: CarouselItem? = items[initialStep]
 
     var animationTargetState = remember { mutableStateOf(1f) }
 
@@ -82,7 +92,7 @@ fun Carousel(
         // will start to the new target value
         targetValue = animationTargetState.value,
         animationSpec = tween(
-            durationMillis = 300,
+            durationMillis = 1000,
             easing = LinearOutSlowInEasing
         )
     )
@@ -91,53 +101,66 @@ fun Carousel(
             .pointerInput(true) {
                 detectTapGestures(
                     onPress = {
+
 //                        Log.i("alabama", "onPress")
                         val newAngle = -atan2(
                             circleCenter.x - it.x,
                             circleCenter.y - it.y
                         ) * (180f / PI.toFloat())
                         startedAngle = newAngle
-                        animationTargetState.value = 0.7f
                     },
                     onTap = {
-//                        Log.i("alabama", "onTap")
                         itemSelected = getCurrentItemByClick(
                             x = it.x,
                             y = it.y,
-                            xRadius = itemRadius + 20,
-                            yRadius = chosenItemRadius + 20,
+                            xRadius = chosenItemRadius ,
+                            yRadius = chosenItemRadius ,
                             items = items
                         )
-                        itemSelected?.let { item->
-                            angle = calcClosestAngle(
-                                angleRoundToInt = (oldAngle - startedAngle).roundToInt(),
-                                step = step
-                            ).coerceIn(
-                                minimumValue = initial - max.toFloat(),
-                                maximumValue = initial - min.toFloat()
-                            )
-
+                        itemSelected?.let { item ->
                             onItemSelected(item)
-                            Log.i("alabama", "onItemSelected:${item.unSelectedText}")
-                            if (item == items[currentItem]){
-                                Log.i("alabama", "itemClicked:${item.unSelectedText}")
-                                onItemSelectedPressed
+                            if (item == items[currentItem]) {
+                                onItemSelectedPressed.invoke()
+                            } else {
+                                val old = oldAngle
+                                var iterator: Int
+                                val animateSteps = abs(calcClosestAngle(
+                                    angleRoundToInt = startedAngle.roundToInt(),
+                                    step = step
+                                ).toInt())
+                                isDrag = true
+                                for (i in 0..animateSteps) {
+                                        handler.postDelayed({
+                                            iterator = i
+                                        if (startedAngle > 0) {
+                                            iterator = i * -1
+                                        }
+                                        angle = (old + iterator).coerceIn(
+                                            minimumValue = initial - max.toFloat(),
+                                            maximumValue = initial - min.toFloat()
+                                        )
+                                        oldAngle = angle
+                                            if (i == animateSteps-1){
+                                                isDrag = false
+                                            }
+                                    }, i * 10L)
+                                }
                             }
-
-                            oldAngle = angle
-                            isDrag = false
                         }
-                            animationTargetState.value = 1f
 
+//                        angle = angle.coerceIn(
+//                            minimumValue = initial - max.toFloat(),
+//                            maximumValue = initial - min.toFloat()
+//                        )
+                        animationTargetState.value = 1f
                     },
-//                    onLongPress = { offset ->
-//                        Log.i("alabama", "onLongPress")
-//                        animationTargetState.value = 1f
-//                    },
                 )
             }
             .pointerInput(true) {
                 detectDragGestures(
+                    onDragStart = {
+                        animationTargetState.value = 0.7f
+                    },
                     onDrag = { change, offset ->
 //                        Log.i("alabama", "onDrag")
                         val touchAngle = -atan2(
@@ -158,6 +181,31 @@ fun Carousel(
                     onDragEnd = {
 //                        Log.i("alabama", "onDragEnd")
 
+                        /*
+                        val old = oldAngle
+                        var iterator: Int
+                        for (i in 0..abs(calcClosestAngle(
+                            angleRoundToInt = startedAngle.roundToInt(),
+                            step = step
+                        ).toInt())) {
+                            handler.postDelayed({
+                                iterator = i
+                                if (startedAngle > 0) {
+                                    iterator = i * -1
+                                }
+                                angle = (old + iterator).coerceIn(
+                                    minimumValue = initial - max.toFloat(),
+                                    maximumValue = initial - min.toFloat()
+                                )
+                                oldAngle = angle
+                            }, i * 10L)
+                        }
+
+                        */
+
+
+
+
                         angle = calcClosestAngle(
                             angleRoundToInt = angle.roundToInt(),
                             step = step
@@ -169,7 +217,7 @@ fun Carousel(
                         oldAngle = angle
                         isDrag = false
                         animationTargetState.value = 1f
-                        currentItem = initialStep - (angle/step).toInt()
+                        currentItem = initialStep - (angle / step).toInt()
                         Log.i("alabama", "onItemSelected:${items[currentItem].unSelectedText}")
                         onItemSelected(items[currentItem])
                     }
@@ -186,16 +234,26 @@ fun Carousel(
         innerRadius = radius.toPx() - scaleWidth.toPx() / 2f
 
         for (i in min..max) {
+
             val angleInRad = (i - initial + angle - 90) * ((PI / 180f).toFloat())
 
             drawContext.canvas.nativeCanvas.apply {
 
                 if (i % step == 0) {
-                    val x = innerRadius * cos(angleInRad) + circleCenter.x
-                    val y = innerRadius * sin(angleInRad) + circleCenter.y
+                    val x = calcPointX(
+                        radius = innerRadius,
+                        angleInRad = angleInRad,
+                        circleCenterX = circleCenter.x
+                    )
+                    val y = calcPointY(
+                        radius = innerRadius,
+                        angleInRad = angleInRad,
+                        circleCenterY = circleCenter.y
+                    )
 
                     items[i / step].x = x
                     items[i / step].y = y
+                    var a = isDrag
                     if (radiansToDegrees(radians = angleInRad).roundToInt() == middlePoint && !isDrag) {
                         currentItem = (i / step)
                         drawCircle(
@@ -336,6 +394,14 @@ fun calcClosestAngle(angleRoundToInt: Int, step: Int): Float {
     return (tempAngle * step).toFloat()
 }
 
+fun calcPointX(circleCenterX: Float, angleInRad: Float, radius: Float): Float {
+    return radius * cos(angleInRad) + circleCenterX
+}
+
+fun calcPointY(circleCenterY: Float, angleInRad: Float, radius: Float): Float {
+    return radius * sin(angleInRad) + circleCenterY
+}
+
 fun getBitmapFromVectorDrawable(context: Context, drawableId: Int): Bitmap? {
     val drawable = ContextCompat.getDrawable(context, drawableId)
     val bitmap = Bitmap.createBitmap(
@@ -347,3 +413,4 @@ fun getBitmapFromVectorDrawable(context: Context, drawableId: Int): Bitmap? {
     drawable.draw(canvas)
     return bitmap
 }
+
