@@ -8,9 +8,6 @@ import android.graphics.Typeface
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
-import androidx.compose.animation.core.LinearOutSlowInEasing
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -79,23 +76,8 @@ fun Carousel(
         mutableStateOf(false)
     }
 
-    var isTap by remember {
-        mutableStateOf(false)
-    }
-
     var itemSelected: CarouselItem? = items[initialStep]
 
-    var animationTargetState = remember { mutableStateOf(1f) }
-
-    var animateFloat = animateFloatAsState(
-        // Whenever the target value changes, new animation
-        // will start to the new target value
-        targetValue = animationTargetState.value,
-        animationSpec = tween(
-            durationMillis = 1000,
-            easing = LinearOutSlowInEasing
-        )
-    )
     Canvas(
         modifier = modifier
             .pointerInput(true) {
@@ -152,15 +134,11 @@ fun Carousel(
 //                            minimumValue = initial - max.toFloat(),
 //                            maximumValue = initial - min.toFloat()
 //                        )
-                        animationTargetState.value = 1f
                     },
                 )
             }
             .pointerInput(true) {
                 detectDragGestures(
-                    onDragStart = {
-                        animationTargetState.value = 0.7f
-                    },
                     onDrag = { change, offset ->
 //                        Log.i("alabama", "onDrag")
                         val touchAngle = -atan2(
@@ -216,7 +194,6 @@ fun Carousel(
 
                         oldAngle = angle
                         isDrag = false
-                        animationTargetState.value = 1f
                         currentItem = initialStep - (angle / step).toInt()
                         Log.i("alabama", "onItemSelected:${items[currentItem].unSelectedText}")
                         onItemSelected(items[currentItem])
@@ -259,7 +236,7 @@ fun Carousel(
                         drawCircle(
                             x,
                             y,
-                            chosenItemRadius * animateFloat.value * 1.2f,
+                            chosenItemRadius * 1.2f,
                             Paint().apply {
                                 color = items[i / step].color
                                 alpha = 50
@@ -268,7 +245,7 @@ fun Carousel(
                         drawCircle(
                             x,
                             y,
-                            chosenItemRadius * animateFloat.value,
+                            chosenItemRadius,
                             Paint().apply {
                                 color = items[i / step].color
                             }
@@ -280,7 +257,7 @@ fun Carousel(
                             y - itemRadius / 2,
                             Paint().apply {
                                 color = style.chosenTextColor
-                                textSize = chosenItemRadius * animateFloat.value * 0.4f
+                                textSize = chosenItemRadius * 0.4f
                                 textAlign = Paint.Align.CENTER
                             }
                         )
@@ -290,7 +267,7 @@ fun Carousel(
                             y + style.textSize.toPx() / 2 + 10.dp.toPx(),
                             Paint().apply {
                                 color = style.chosenTextColor
-                                textSize = chosenItemRadius * animateFloat.value * 0.4f
+                                textSize = chosenItemRadius * 0.4f
                                 typeface = Typeface.DEFAULT_BOLD
                                 textAlign = Paint.Align.CENTER
                             }
