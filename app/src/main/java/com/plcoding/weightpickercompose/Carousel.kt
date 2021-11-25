@@ -45,6 +45,8 @@ fun Carousel(
 
     var chosenItemRadius = 14f
     var itemRadius = 14f
+    var amountSize = chosenItemRadius.toInt() - itemRadius.toInt()
+
 
     val scaleWidth = style.scaleWidth
     val radius = style.radius
@@ -95,8 +97,8 @@ fun Carousel(
                         itemSelected = getCurrentItemByClick(
                             x = it.x,
                             y = it.y,
-                            xRadius = chosenItemRadius ,
-                            yRadius = chosenItemRadius ,
+                            xRadius = (itemRadius + amountSize) ,
+                            yRadius = (itemRadius + amountSize) ,
                             items = items
                         )
                         itemSelected?.let { item ->
@@ -124,6 +126,13 @@ fun Carousel(
                                         oldAngle = angle
                                             if (i == animateSteps-1){
                                                 isDrag = false
+                                                for (i in 0..amountSize) {
+                                                    handler.postDelayed({
+
+                                                    }, i * 10L)
+                                                }
+
+
                                             }
                                     }, i * 10L)
                                 }
@@ -206,8 +215,9 @@ fun Carousel(
             center.x,
             scaleWidth.toPx() / 2f + radius.toPx()
         )
-        chosenItemRadius = (this.size.width / 8f)
         itemRadius = (this.size.width / 16f)
+        amountSize = ((this.size.width / 8f) - itemRadius).toInt()
+
         innerRadius = radius.toPx() - scaleWidth.toPx() / 2f
 
         for (i in min..max) {
@@ -236,7 +246,7 @@ fun Carousel(
                         drawCircle(
                             x,
                             y,
-                            chosenItemRadius * 1.2f,
+                            (itemRadius + amountSize) * 1.2f,
                             Paint().apply {
                                 color = items[i / step].color
                                 alpha = 50
@@ -245,7 +255,7 @@ fun Carousel(
                         drawCircle(
                             x,
                             y,
-                            chosenItemRadius,
+                            (itemRadius + amountSize),
                             Paint().apply {
                                 color = items[i / step].color
                             }
@@ -257,7 +267,7 @@ fun Carousel(
                             y - itemRadius / 2,
                             Paint().apply {
                                 color = style.chosenTextColor
-                                textSize = chosenItemRadius * 0.4f
+                                textSize = (itemRadius + amountSize) * 0.4f
                                 textAlign = Paint.Align.CENTER
                             }
                         )
@@ -267,7 +277,7 @@ fun Carousel(
                             y + style.textSize.toPx() / 2 + 10.dp.toPx(),
                             Paint().apply {
                                 color = style.chosenTextColor
-                                textSize = chosenItemRadius * 0.4f
+                                textSize = (itemRadius + amountSize) * 0.4f
                                 typeface = Typeface.DEFAULT_BOLD
                                 textAlign = Paint.Align.CENTER
                             }
@@ -295,7 +305,7 @@ fun Carousel(
                         drawText(
                             items[i / step].unSelectedText,
                             x,
-                            y + chosenItemRadius,
+                            y + (itemRadius + amountSize),
                             Paint().apply {
                                 color = style.textColor
                                 textSize = (itemRadius) * 0.7f
@@ -322,7 +332,7 @@ fun Carousel(
                         drawText(
                             items[i / step].unSelectedText,
                             x,
-                            y + chosenItemRadius,
+                            y + (itemRadius + amountSize),
                             Paint().apply {
                                 color = style.textColor
                                 textSize = itemRadius * 0.7f
