@@ -11,7 +11,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
@@ -21,25 +20,25 @@ import kotlin.time.ExperimentalTime
 var items: Array<CarouselItem> = arrayOf(
     CarouselItem().apply {
         icon = R.drawable.ic_1
-        color = android.graphics.Color.argb(255, 246,  103,  119)
+        color = android.graphics.Color.argb(255, 246, 103, 119)
         unSelectedText = "תדלוק"
         selectedTextBottom = "תדלוק"
     },
     CarouselItem().apply {
         icon = R.drawable.ic_2
-        color = android.graphics.Color.argb(255, 131, 188,255)
+        color = android.graphics.Color.argb(255, 131, 188, 255)
         unSelectedText = "חניונים"
         selectedTextBottom = "חניונים"
     },
     CarouselItem().apply {
         icon = R.drawable.ic_3
-        color = android.graphics.Color.argb(255, 48,108,234)
+        color = android.graphics.Color.argb(255, 48, 108, 234)
         unSelectedText = "חנייה"
         selectedTextBottom = "חנייה"
     },
     CarouselItem().apply {
         icon = R.drawable.ic_4
-        color = android.graphics.Color.argb(255, 237,  184,  121)
+        color = android.graphics.Color.argb(255, 237, 184, 121)
         unSelectedText = "ביטוח"
         selectedTextBottom = "ביטוח"
     },
@@ -51,22 +50,19 @@ var items: Array<CarouselItem> = arrayOf(
     },
     CarouselItem().apply {
         icon = R.drawable.ic_6
-        color = android.graphics.Color.argb(255, 255,120,62)
+        color = android.graphics.Color.argb(255, 255, 120, 62)
         unSelectedText = "חילוץ"
         selectedTextBottom = "חילוץ"
     },
     CarouselItem().apply {
         icon = R.drawable.ic_7
-        color = android.graphics.Color.argb(255, 245,25,145)
+        color = android.graphics.Color.argb(255, 245, 25, 145)
         unSelectedText = "שטיפומט"
         selectedTextBottom = "שטיפומט"
     }
 )
 
 var selectedScreen: MutableState<CarouselItem?> = mutableStateOf(items[items.size / 2])
-
-
-
 
 
 class MainActivity : ComponentActivity() {
@@ -76,17 +72,18 @@ class MainActivity : ComponentActivity() {
     @ExperimentalComposeUiApi
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         setContent {
             val configuration = LocalConfiguration.current
 
+            var chosenCarouselValue by remember {
+                mutableStateOf(items[items.size / 2])
+            }
 
             val dm = resources.displayMetrics
             val screenHeight = configuration.screenHeightDp.dp
             val screenWidth = configuration.screenWidthDp.dp
 
-            var chosenCarouselValue by remember {
-                mutableStateOf(items[items.size/2])
-            }
 
             var rnd = Random.nextInt(0, items.size)
 
@@ -113,13 +110,15 @@ class MainActivity : ComponentActivity() {
                 Box(
                     modifier = Modifier.fillMaxWidth()
                         .fillMaxHeight(fraction = 0.65f)
-                        .align(Alignment.Center)) {
+                        .align(Alignment.Center)
+                ) {
                     CardsRowLayout(
-                        cardWidth = (screenWidth.value*0.9).dp,
-                        cardHeight = (screenHeight.value*0.63).dp,
+                        cardWidth = (screenWidth.value * 0.9).dp,
+                        cardHeight = (screenHeight.value * 0.63).dp,
                         screens = items,
                         selectedScreen = chosenCarouselValue,
-                        onSelectedScreenChanged = ::onSelectedCategoryChanged)
+                        onSelectedScreenChanged = ::onSelectedCategoryChanged
+                    )
                 }
 
                 Carousel(
@@ -132,16 +131,16 @@ class MainActivity : ComponentActivity() {
                         .fillMaxHeight(fraction = 0.25f)
                         .align(Alignment.BottomCenter),
                     onItemSelected = { chosenCarouselValue = it },
-                    onItemSelectedPressed = { onItemSelectedPressed() }
+                    onItemSelectedPressed = { onItemSelectedPressed(it) }
                 )
             }
         }
     }
 
-    private fun onItemSelectedPressed() {
-        Toast.makeText(applicationContext, "click", Toast.LENGTH_SHORT).show()
+    fun onItemSelectedPressed(carouselItem: CarouselItem) {
+        Toast.makeText(applicationContext, "click - ${carouselItem.unSelectedText}", Toast.LENGTH_SHORT)
+            .show()
     }
-
 }
 
 fun onSelectedCategoryChanged(item: CarouselItem) {

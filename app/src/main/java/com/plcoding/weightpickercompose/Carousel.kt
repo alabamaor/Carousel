@@ -1,10 +1,7 @@
 package com.plcoding.weightpickercompose
 
 import android.content.Context
-import android.graphics.Bitmap
-import android.graphics.Canvas
-import android.graphics.Paint
-import android.graphics.Typeface
+import android.graphics.*
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
@@ -38,9 +35,9 @@ fun Carousel(
     maxStep: Int = (items.size - 1),
     initialStep: Int = (items.size - 1) / 2,
     onItemSelected: (CarouselItem) -> Unit,
-    onItemSelectedPressed: () -> Unit
+    onItemSelectedPressed: (CarouselItem) -> Unit
 ) {
-    val step = 20
+    val step = 22
     val middlePoint = -90
     val min = minStep
     val max = maxStep * step
@@ -50,7 +47,9 @@ fun Carousel(
     var itemRadius = 14f
 
     val scaleWidth = style.scaleWidth
-    val radius = style.radius
+    var radius by remember {
+        mutableStateOf(style.radius)
+    }
     var innerRadius = 0f
 
     val handler = Handler(Looper.myLooper()!!)
@@ -79,10 +78,6 @@ fun Carousel(
         mutableStateOf(false)
     }
 
-    var isTap by remember {
-        mutableStateOf(false)
-    }
-
     var itemSelected: CarouselItem? = items[initialStep]
 
     var animationTargetState = remember { mutableStateOf(1f) }
@@ -101,7 +96,7 @@ fun Carousel(
             .pointerInput(true) {
                 detectTapGestures(
                     onPress = {
-
+                        animationTargetState.value = 0.7f
 //                        Log.i("alabama", "onPress")
                         val newAngle = -atan2(
                             circleCenter.x - it.x,
@@ -113,25 +108,27 @@ fun Carousel(
                         itemSelected = getCurrentItemByClick(
                             x = it.x,
                             y = it.y,
-                            xRadius = chosenItemRadius ,
-                            yRadius = chosenItemRadius ,
+                            xRadius = chosenItemRadius,
+                            yRadius = chosenItemRadius,
                             items = items
                         )
                         itemSelected?.let { item ->
                             onItemSelected(item)
                             if (item == items[currentItem]) {
-                                onItemSelectedPressed.invoke()
+                                onItemSelectedPressed.invoke(item)
                             } else {
                                 val old = oldAngle
                                 var iterator: Int
-                                val animateSteps = abs(calcClosestAngle(
-                                    angleRoundToInt = startedAngle.roundToInt(),
-                                    step = step
-                                ).toInt())
+                                val animateSteps = abs(
+                                    calcClosestAngle(
+                                        angleRoundToInt = startedAngle.roundToInt(),
+                                        step = step
+                                    ).toInt()
+                                )
                                 isDrag = true
                                 for (i in 0..animateSteps) {
-                                        handler.postDelayed({
-                                            iterator = i
+                                    handler.postDelayed({
+                                        iterator = i
                                         if (startedAngle > 0) {
                                             iterator = i * -1
                                         }
@@ -140,18 +137,13 @@ fun Carousel(
                                             maximumValue = initial - min.toFloat()
                                         )
                                         oldAngle = angle
-                                            if (i == animateSteps-1){
-                                                isDrag = false
-                                            }
+                                        if (i == animateSteps - 1) {
+                                            isDrag = false
+                                        }
                                     }, i * 10L)
                                 }
                             }
                         }
-
-//                        angle = angle.coerceIn(
-//                            minimumValue = initial - max.toFloat(),
-//                            maximumValue = initial - min.toFloat()
-//                        )
                         animationTargetState.value = 1f
                     },
                 )
@@ -160,8 +152,9 @@ fun Carousel(
                 detectDragGestures(
                     onDragStart = {
                         animationTargetState.value = 0.7f
+                        radius = style.radius - 40.dp
                     },
-                    onDrag = { change, offset ->
+                    onDrag = { change, _ ->
 //                        Log.i("alabama", "onDrag")
                         val touchAngle = -atan2(
                             circleCenter.x - change.position.x,
@@ -176,36 +169,8 @@ fun Carousel(
                             )
                         }
                     },
-//                    onDragCancel = { Log.i("alabama", "onDragCancel") },
-//                    onDragStart = { offset -> Log.i("alabama", "onDragStart") },
                     onDragEnd = {
 //                        Log.i("alabama", "onDragEnd")
-
-                        /*
-                        val old = oldAngle
-                        var iterator: Int
-                        for (i in 0..abs(calcClosestAngle(
-                            angleRoundToInt = startedAngle.roundToInt(),
-                            step = step
-                        ).toInt())) {
-                            handler.postDelayed({
-                                iterator = i
-                                if (startedAngle > 0) {
-                                    iterator = i * -1
-                                }
-                                angle = (old + iterator).coerceIn(
-                                    minimumValue = initial - max.toFloat(),
-                                    maximumValue = initial - min.toFloat()
-                                )
-                                oldAngle = angle
-                            }, i * 10L)
-                        }
-
-                        */
-
-
-
-
                         angle = calcClosestAngle(
                             angleRoundToInt = angle.roundToInt(),
                             step = step
@@ -217,6 +182,7 @@ fun Carousel(
                         oldAngle = angle
                         isDrag = false
                         animationTargetState.value = 1f
+                        radius = style.radius
                         currentItem = initialStep - (angle / step).toInt()
                         Log.i("alabama", "onItemSelected:${items[currentItem].unSelectedText}")
                         onItemSelected(items[currentItem])
@@ -229,9 +195,10 @@ fun Carousel(
             center.x,
             scaleWidth.toPx() / 2f + radius.toPx()
         )
-        chosenItemRadius = (this.size.width / 8f)
-        itemRadius = (this.size.width / 16f)
+        chosenItemRadius = (this.size.width / 6f)
+        itemRadius = (this.size.width / 15f)
         innerRadius = radius.toPx() - scaleWidth.toPx() / 2f
+
 
         for (i in min..max) {
 
@@ -240,29 +207,27 @@ fun Carousel(
             drawContext.canvas.nativeCanvas.apply {
 
                 if (i % step == 0) {
-                    val x = calcPointX(
+                    var x = calcPointX(
                         radius = innerRadius,
                         angleInRad = angleInRad,
                         circleCenterX = circleCenter.x
                     )
-                    val y = calcPointY(
+                    var y = calcPointY(
                         radius = innerRadius,
                         angleInRad = angleInRad,
                         circleCenterY = circleCenter.y
                     )
-
-                    items[i / step].x = x
-                    items[i / step].y = y
-                    var a = isDrag
                     if (radiansToDegrees(radians = angleInRad).roundToInt() == middlePoint && !isDrag) {
+                        y -= 50
                         currentItem = (i / step)
                         drawCircle(
                             x,
                             y,
-                            chosenItemRadius * animateFloat.value * 1.2f,
+                            chosenItemRadius * animateFloat.value * 1.15f,
                             Paint().apply {
                                 color = items[i / step].color
-                                alpha = 50
+                                alpha = 65
+                                maskFilter = BlurMaskFilter(chosenItemRadius* animateFloat.value, BlurMaskFilter.Blur.SOLID)
                             }
                         )
                         drawCircle(
@@ -298,12 +263,14 @@ fun Carousel(
                     } else if ((radiansToDegrees(radians = angleInRad) < middlePoint + step / 2 && isDrag) &&
                         (radiansToDegrees(radians = angleInRad) > middlePoint - step / 2 && isDrag)
                     ) {
+                        y -= +(step - abs(radiansToDegrees(radians = angleInRad) - middlePoint))
                         drawCircle(
                             x,
                             y,
                             (itemRadius + (step - abs(radiansToDegrees(radians = angleInRad) - middlePoint))),
                             Paint().apply {
                                 color = items[i / step].color
+                                maskFilter = BlurMaskFilter(itemRadius* 0.3f, BlurMaskFilter.Blur.SOLID)
                             }
                         )
                         getBitmapFromVectorDrawable(context, items[i / step].icon)?.let {
@@ -318,7 +285,7 @@ fun Carousel(
                         drawText(
                             items[i / step].unSelectedText,
                             x,
-                            y + chosenItemRadius,
+                            y + itemRadius * 2f,
                             Paint().apply {
                                 color = style.textColor
                                 textSize = (itemRadius) * 0.7f
@@ -326,12 +293,19 @@ fun Carousel(
                             }
                         )
                     } else {
+                        if (radiansToDegrees(radians = angleInRad).roundToInt() == middlePoint + step && !isDrag) {
+                            x += step
+                        } else if (radiansToDegrees(radians = angleInRad).roundToInt() == middlePoint - step && !isDrag) {
+                            x -= step
+                        }
                         drawCircle(
                             x,
                             y,
                             itemRadius,
                             Paint().apply {
                                 color = items[i / step].color
+                                maskFilter = BlurMaskFilter(itemRadius* 0.3f, BlurMaskFilter.Blur.SOLID)
+//                                setShadowLayer(itemRadius, x, y - itemRadius, items[i / step].color)
                             }
                         )
                         getBitmapFromVectorDrawable(context, items[i / step].icon)?.let {
@@ -345,14 +319,16 @@ fun Carousel(
                         drawText(
                             items[i / step].unSelectedText,
                             x,
-                            y + chosenItemRadius,
+                            y + itemRadius * 2f,
                             Paint().apply {
                                 color = style.textColor
-                                textSize = itemRadius * 0.7f
+                                textSize = itemRadius * 0.5f
                                 textAlign = Paint.Align.CENTER
                             }
                         )
                     }
+                    items[i / step].x = x
+                    items[i / step].y = y
                 }
             }
         }
