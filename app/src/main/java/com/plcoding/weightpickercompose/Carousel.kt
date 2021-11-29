@@ -173,10 +173,10 @@ fun Carousel(
                             isDrag = true
                             val newAngle = oldAngle + (touchAngle - startedAngle)
                             angle = newAngle
-//                                .coerceIn(
-//                                minimumValue = initial - max.toFloat(),
-//                                maximumValue = initial - min.toFloat()
-//                            )
+                                .coerceIn(
+                                minimumValue = initial - (max + 30).toFloat(),
+                                maximumValue = initial - (min - 30).toFloat()
+                            )
                         }
                     },
                     onDragEnd = {
