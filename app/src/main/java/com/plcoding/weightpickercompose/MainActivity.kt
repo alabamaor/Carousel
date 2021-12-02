@@ -1,6 +1,8 @@
 package com.plcoding.weightpickercompose
 
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -85,7 +87,9 @@ class MainActivity : ComponentActivity() {
             val screenWidth = configuration.screenWidthDp.dp
 
 
-            var rnd = Random.nextInt(0, items.size)
+//            var rnd by remember { mutableStateOf(Random.nextInt(0, items.size))}
+//            Handler(Looper.myLooper()!!).postDelayed({ rnd = Random.nextInt(0, items.size) }, 1000L)
+
 
             Box(
                 modifier = Modifier
@@ -123,7 +127,7 @@ class MainActivity : ComponentActivity() {
 
                 Carousel(
                     items = items,
-//                    initialStep = rnd,
+//                    initialChosenItem = rnd,
                     context = applicationContext,
                     style = CarouselStyle(),
                     modifier = Modifier
@@ -138,7 +142,11 @@ class MainActivity : ComponentActivity() {
     }
 
     fun onItemSelectedPressed(carouselItem: CarouselItem) {
-        Toast.makeText(applicationContext, "click - ${carouselItem.unSelectedText}", Toast.LENGTH_SHORT)
+        Toast.makeText(
+            applicationContext,
+            "click - ${carouselItem.unSelectedText}",
+            Toast.LENGTH_SHORT
+        )
             .show()
     }
 }
