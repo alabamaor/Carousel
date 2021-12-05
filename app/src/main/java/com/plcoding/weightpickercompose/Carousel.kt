@@ -20,7 +20,8 @@ import kotlin.math.*
 import kotlin.time.ExperimentalTime
 
 
-const val INITIAL_CIRCLE_SIZE = 0.6f
+const val INITIAL_CIRCLE_SIZE = 1f
+const val SELECTED_CIRCLE_SIZE = 1.8f
 const val CIRCLE_ANIMATION_STEP = 0.01f
 const val CIRCLE_ANIMATION_TIME = 8L
 const val CIRCLE_ANIMATION_REVERSE_TIME = 5L
@@ -68,7 +69,7 @@ fun Carousel(
     var startedAngle by remember { mutableStateOf(0f) }
     var oldAngle by remember { mutableStateOf(angle) }
     var isDrag by remember { mutableStateOf(false) }
-    var animationTargetState by remember { mutableStateOf(1f) }
+    var animationTargetState by remember { mutableStateOf(SELECTED_CIRCLE_SIZE) }
 
     Canvas(
         modifier = modifier
@@ -131,7 +132,6 @@ fun Carousel(
                                         step = STEP
                                     ).toInt()
                                 )
-                                isDrag = true
                                 for (i in 0..animateSteps) {
                                     animationTargetState = INITIAL_CIRCLE_SIZE
                                     handler.postDelayed({
@@ -147,9 +147,11 @@ fun Carousel(
                                         if (i == animateSteps - 1) {
                                             isDrag = false
                                             var innerI = 0
-                                            while (innerI <= (1f - animationTargetState) / CIRCLE_ANIMATION_STEP) {
+                                            while (innerI <= (SELECTED_CIRCLE_SIZE - animationTargetState) / CIRCLE_ANIMATION_STEP) {
                                                 handler.postDelayed({
-                                                    animationTargetState += CIRCLE_ANIMATION_STEP
+                                                    if (animationTargetState < SELECTED_CIRCLE_SIZE) {
+                                                        animationTargetState += CIRCLE_ANIMATION_STEP
+                                                    }
                                                 }, innerI * CIRCLE_ANIMATION_TIME)
                                                 innerI++
                                             }
@@ -232,9 +234,11 @@ fun Carousel(
                         isDrag = false
                         radius = style.radius
                         var i = 0
-                        while (i <= (1f - animationTargetState) / CIRCLE_ANIMATION_STEP) {
+                        while (i <= (SELECTED_CIRCLE_SIZE - animationTargetState) / CIRCLE_ANIMATION_STEP) {
                             handler.postDelayed({
-                                animationTargetState += CIRCLE_ANIMATION_STEP
+                                if (animationTargetState < SELECTED_CIRCLE_SIZE) {
+                                    animationTargetState += CIRCLE_ANIMATION_STEP
+                                }
                             }, i * CIRCLE_ANIMATION_TIME)
                             i++
                         }
@@ -266,72 +270,80 @@ fun Carousel(
                         angleInRad = angleInRad,
                         circleCenterY = circleCenter.y
                     )
-                    if (radiansToDegrees(radians = angleInRad).roundToInt() == MIDDLE_POINT && !isDrag) {
-                        y -= 50
-                        currentItem = (i / STEP)
+
+                    //Middle Circle Position
+                    if ((radiansToDegrees(radians = angleInRad) < MIDDLE_POINT + STEP / 2) &&
+                        (radiansToDegrees(radians = angleInRad) > MIDDLE_POINT - STEP / 2)
+                    ) {
+                        val value =
+                            (STEP - abs(radiansToDegrees(radians = angleInRad) - MIDDLE_POINT))
+                        y -= value
+
+                        if (isDrag) {
+                        } else {
+                            currentItem = (i / STEP)
+                        }
+
+                        //BlurCircle
                         drawCircle(
                             x,
                             y,
-                            chosenItemRadius * animationTargetState * 1.15f,
+                            (itemRadius + (STEP - abs(radiansToDegrees(radians = angleInRad) - MIDDLE_POINT))) * animationTargetState * 1.15f,
                             Paint().apply {
                                 color = items[i / STEP].color
                                 alpha = 65
                                 maskFilter = BlurMaskFilter(
-                                    chosenItemRadius * 0.8f * animationTargetState,
+                                    itemRadius * 0.8f * animationTargetState,
                                     BlurMaskFilter.Blur.SOLID
                                 )
                             }
                         )
+
+                        //MainCircle
                         drawCircle(
                             x,
                             y,
-                            chosenItemRadius * animationTargetState,
+                            (itemRadius + (STEP - abs(radiansToDegrees(radians = angleInRad) - MIDDLE_POINT))) * animationTargetState,
                             Paint().apply {
                                 color = items[i / STEP].color
                             }
                         )
 
+                        //Inner text top
                         drawText(
                             items[i / STEP].selectedTextTop,
                             x,
                             y - itemRadius / 2,
                             Paint().apply {
                                 color = style.chosenTextColor
-                                textSize = chosenItemRadius * animationTargetState * 0.4f
+                                textSize = itemRadius * animationTargetState * 0.4f
                                 textAlign = Paint.Align.CENTER
+                                alpha = setAlpha(!isDrag)
+
                             }
                         )
+                        //Inner text bottom
                         drawText(
                             items[i / STEP].selectedTextBottom,
                             x,
                             y + style.textSize.toPx() / 2 + 10.dp.toPx(),
                             Paint().apply {
                                 color = style.chosenTextColor
-                                textSize = chosenItemRadius * animationTargetState * 0.4f
+                                textSize = itemRadius * animationTargetState * 0.4f
                                 typeface = Typeface.DEFAULT_BOLD
                                 textAlign = Paint.Align.CENTER
+                                alpha = setAlpha(!isDrag)
                             }
                         )
-                    } else if ((radiansToDegrees(radians = angleInRad) < MIDDLE_POINT + STEP / 2 && isDrag) &&
-                        (radiansToDegrees(radians = angleInRad) > MIDDLE_POINT - STEP / 2 && isDrag)
-                    ) {
-//                        y -= ( abs(radiansToDegrees(radians = angleInRad) - MIDDLE_POINT))
-                        drawCircle(
-                            x,
-                            y,
-                            (itemRadius + (STEP - abs(radiansToDegrees(radians = angleInRad) - MIDDLE_POINT))),
-                            Paint().apply {
-                                color = items[i / STEP].color
-                                maskFilter =
-                                    BlurMaskFilter(itemRadius * 0.2f, BlurMaskFilter.Blur.SOLID)
-                            }
-                        )
+
                         getBitmapFromVectorDrawable(context, items[i / STEP].icon)?.let {
                             drawBitmap(
                                 it,
                                 x - it.width / 2,
                                 y - it.height / 2,
-                                null
+                                Paint().apply {
+                                    alpha = setAlpha(isDrag)
+                                }
                             )
                         }
 
@@ -343,6 +355,7 @@ fun Carousel(
                                 color = style.textColor
                                 textSize = itemRadius * 0.5f
                                 textAlign = Paint.Align.CENTER
+                                alpha = setAlpha(isDrag)
                             }
                         )
                     } else {
@@ -387,6 +400,10 @@ fun Carousel(
             }
         }
     }
+}
+
+fun setAlpha(isVisible: Boolean): Int {
+    return if (isVisible) 255 else 0
 }
 
 fun degreesToRadians(degrees: Float): Double {
