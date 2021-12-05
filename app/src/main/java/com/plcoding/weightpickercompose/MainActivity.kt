@@ -1,8 +1,6 @@
 package com.plcoding.weightpickercompose
 
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -17,7 +15,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import kotlin.random.Random
 import kotlin.time.ExperimentalTime
 
 var items: Array<CarouselItem> = arrayOf(
@@ -128,17 +125,18 @@ class MainActivity : ComponentActivity() {
                 }
 
                 Carousel(
-                    items = items,
-//                    initialChosenItem = rnd,
-                    context = applicationContext,
-                    style = CarouselStyle(),
                     modifier = Modifier
                         .fillMaxWidth()
                         .fillMaxHeight(fraction = 0.25f)
                         .align(Alignment.BottomCenter),
-                    onItemSelected = { chosenCarouselValue = it },
-                    onItemSelectedPressed = { onItemSelectedPressed(it) }
-                )
+//                    initialChosenItem = rnd,
+                    context = applicationContext,
+                    canvasWidth = screenWidth,
+                    canvasHeight = screenHeight*0.25f,
+                    style = CarouselStyle(),
+                    items = items,
+                    onItemSelected = { chosenCarouselValue = it }
+                ) { onItemSelectedPressed(it) }
             }
         }
     }
