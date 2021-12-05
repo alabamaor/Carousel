@@ -13,6 +13,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
@@ -99,6 +100,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.matchParentSize(),
                     painter = painterResource(R.drawable.iparked_map_bg),
                     contentDescription = "",
+                    contentScale = ContentScale.FillBounds
                 )
                 Row(
                     modifier = Modifier.fillMaxWidth()

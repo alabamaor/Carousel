@@ -23,7 +23,7 @@ import kotlin.time.ExperimentalTime
 const val INITIAL_CIRCLE_SIZE = 0.6f
 const val CIRCLE_ANIMATION_STEP = 0.01f
 const val CIRCLE_ANIMATION_TIME = 8L
-const val CIRCLE_ANIMATION_REVERSE_TIME = 6L
+const val CIRCLE_ANIMATION_REVERSE_TIME = 5L
 const val TRANSITION_ANIMATION_TIME = 7L
 const val CHOSEN_ITEM_RATIO = 6f
 const val ITEM_RATIO = 15f
@@ -110,6 +110,18 @@ fun Carousel(
                             onItemSelected(item)
                             if (item == items[currentItem]) {
                                 onItemSelectedPressed.invoke(item)
+//                                var i = 0
+//                                animationTargetState = 1f
+//                                while (i <= (1f - INITIAL_CIRCLE_SIZE) / CIRCLE_ANIMATION_STEP) {
+//                                    handler.postDelayed({
+//                                        animationTargetState -= CIRCLE_ANIMATION_STEP
+//                                        if (animationTargetState <= INITIAL_CIRCLE_SIZE) {
+//                                            animationTargetState = 1f
+//                                            onItemSelectedPressed.invoke(item)
+//                                        }
+//                                    }, i * CIRCLE_ANIMATION_REVERSE_TIME)
+//                                    i++
+//                                }
                             } else {
                                 val old = oldAngle
                                 var iterator: Int
@@ -239,11 +251,8 @@ fun Carousel(
         itemRadius = (this.size.width / ITEM_RATIO)
         innerRadius = radius.toPx() - scaleWidth.toPx() / 2f
 
-
         for (i in min..max) {
-
             val angleInRad = (i - initial + angle - 90) * ((PI / 180f).toFloat())
-
             drawContext.canvas.nativeCanvas.apply {
 
                 if (i % STEP == 0) {
