@@ -14,7 +14,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import kotlin.math.*
@@ -23,7 +22,6 @@ import kotlin.time.ExperimentalTime
 
 const val INITIAL_CIRCLE_SIZE = 1f
 const val SELECTED_CIRCLE_SIZE = 1.8f
-const val SELECTED_CIRCLE_RESIZE = 1.15f
 const val CHOSEN_ITEM_RATIO = 6f
 const val ITEM_RATIO = 15f
 
@@ -43,8 +41,8 @@ const val MIDDLE_POINT = -90
 fun Carousel(
     modifier: Modifier = Modifier,
     context: Context,
-    canvasWidth: Dp,
-    canvasHeight: Dp,
+    canvasWidth: Float,
+    canvasHeight: Float,
     style: CarouselStyle = CarouselStyle(),
     items: Array<CarouselItem> = arrayOf(),
     initialChosenItem: Int = (items.size - 1) / 2,
@@ -52,13 +50,10 @@ fun Carousel(
     onItemSelectedPressed: (CarouselItem) -> Unit
 ) {
 
-    var itemRadius= 14f
-
+    var itemRadius = 14f
     var itemSelected: CarouselItem?
     val handler = Handler(Looper.myLooper()!!)
-
-    var carouselViewState by remember { mutableStateOf(CarouselViewState.OtherPoint(isDrag = false)) }
-
+    
     var heightCenter by remember { mutableStateOf((canvasWidth * 0.5f) * 1.5f) }
     var innerRadius by remember { mutableStateOf((canvasWidth * 0.5f) * 1.3f) }
 
@@ -87,8 +82,8 @@ fun Carousel(
                         itemSelected = getCurrentItemByClick(
                             x = it.x,
                             y = it.y,
-                            xRadius = (itemRadius + STEP) * SELECTED_CIRCLE_RESIZE,
-                            yRadius = (itemRadius + STEP) * SELECTED_CIRCLE_RESIZE,
+                            xRadius = canvasWidth / CHOSEN_ITEM_RATIO,
+                            yRadius = canvasWidth / CHOSEN_ITEM_RATIO,
                             items = items
                         )
                         itemSelected?.let { item ->
@@ -216,11 +211,10 @@ fun Carousel(
             }
     ) {
         circleCenter = Offset(
-            canvasWidth.toPx() / 2,
-            heightCenter.toPx()
+            canvasWidth / 2,
+            heightCenter
         )
-//        chosenItemRadius = (canvasWidth.toPx() / CHOSEN_ITEM_RATIO)
-        itemRadius = (canvasWidth.toPx() / ITEM_RATIO)
+        itemRadius = (canvasWidth / ITEM_RATIO)
 
         for (i in 0..((items.size - 1) * STEP)) {
             val angleInRad =
@@ -230,12 +224,12 @@ fun Carousel(
                 if (i % STEP == 0) {
                     Log.i("alabama", "i % STEP: ${i % STEP}")
                     var x = calcPointX(
-                        radius = innerRadius.toPx(),
+                        radius = innerRadius,
                         angleInRad = angleInRad,
                         circleCenterX = circleCenter.x
                     )
                     var y = calcPointY(
-                        radius = innerRadius.toPx(),
+                        radius = innerRadius,
                         angleInRad = angleInRad,
                         circleCenterY = circleCenter.y
                     )
@@ -250,7 +244,8 @@ fun Carousel(
                         } else {
                             currentItem = (i / STEP)
                         }
-                        val expand = ((STEP - expandStep)  - abs(radiansToDegrees(radians = angleInRad) - MIDDLE_POINT))
+                        val expand =
+                            ((STEP - expandStep) - abs(radiansToDegrees(radians = angleInRad) - MIDDLE_POINT))
                         y -= expand
 
 
@@ -258,7 +253,7 @@ fun Carousel(
                         drawCircle(
                             x,
                             y,
-                            (itemRadius + expand) * animationTargetState * SELECTED_CIRCLE_RESIZE,
+                            (itemRadius + expand) * animationTargetState * 1.15f,
                             Paint().apply {
                                 color = items[i / STEP].color
                                 alpha = if (!isDrag) 65 else 0
@@ -318,18 +313,18 @@ fun Carousel(
                                 )
                             }
 
-                        // Outer text below circle
-                        drawText(
-                            items[i / STEP].unSelectedText,
-                            x,
-                            y + itemRadius * 2f,
-                            Paint().apply {
-                                color = style.textColor
-                                textSize = itemRadius * 0.5f
-                                textAlign = Paint.Align.CENTER
-                                alpha = setAlpha(isDrag)
-                            }
-                        )
+                            // Outer text below circle
+                            drawText(
+                                items[i / STEP].unSelectedText,
+                                x,
+                                y + itemRadius * 2f,
+                                Paint().apply {
+                                    color = style.textColor
+                                    textSize = itemRadius * 0.5f
+                                    textAlign = Paint.Align.CENTER
+                                    alpha = setAlpha(isDrag)
+                                }
+                            )
                         }
                     } else {
                         if (radiansToDegrees(radians = angleInRad).roundToInt() == MIDDLE_POINT + STEP && !isDrag) {

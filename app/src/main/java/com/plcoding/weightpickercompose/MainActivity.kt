@@ -17,6 +17,14 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import kotlin.time.ExperimentalTime
 
+import android.view.WindowInsets
+
+import android.os.Build
+
+import android.app.Activity
+import android.graphics.Insets
+
+
 var items: Array<CarouselItem> = arrayOf(
     CarouselItem().apply {
         icon = R.drawable.ic_1
@@ -81,6 +89,7 @@ class MainActivity : ComponentActivity() {
             }
 
             val dm = resources.displayMetrics
+
             val screenHeight = configuration.screenHeightDp.dp
             val screenWidth = configuration.screenWidthDp.dp
 
@@ -131,8 +140,8 @@ class MainActivity : ComponentActivity() {
                         .align(Alignment.BottomCenter),
 //                    initialChosenItem = rnd,
                     context = applicationContext,
-                    canvasWidth = screenWidth,
-                    canvasHeight = screenHeight*0.25f,
+                    canvasWidth = resources.displayMetrics.widthPixels.toFloat(),
+                    canvasHeight = resources.displayMetrics.heightPixels *0.25f,
                     style = CarouselStyle(),
                     items = items,
                     onItemSelected = { chosenCarouselValue = it }
@@ -158,4 +167,15 @@ fun onSelectedCategoryChanged(item: CarouselItem) {
 
 fun findIndex(arr: Array<CarouselItem>, item: CarouselItem): Int {
     return arr.indexOf(item)
+}
+
+fun getScreenHeight(activity: Activity): Int {
+    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+        val windowMetrics = activity.windowManager.currentWindowMetrics
+        val insets: Insets = windowMetrics.windowInsets
+            .getInsetsIgnoringVisibility(WindowInsets.Type.systemBars())
+        windowMetrics.bounds.height() - insets.top - insets.bottom
+    } else {
+        activity.resources.displayMetrics.heightPixels
+    }
 }
