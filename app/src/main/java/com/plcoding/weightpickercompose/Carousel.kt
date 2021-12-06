@@ -99,6 +99,7 @@ fun Carousel(
                                         step = STEP
                                     ).toInt()
                                 )
+                                isDrag = true
                                 for (i in 0..animateSteps) {
                                     animationTargetState = INITIAL_CIRCLE_SIZE
                                     handler.postDelayed({
