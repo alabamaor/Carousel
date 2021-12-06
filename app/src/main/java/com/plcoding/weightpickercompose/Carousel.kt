@@ -23,15 +23,17 @@ import kotlin.time.ExperimentalTime
 
 const val INITIAL_CIRCLE_SIZE = 1f
 const val SELECTED_CIRCLE_SIZE = 1.8f
+const val SELECTED_CIRCLE_RESIZE = 1.15f
 const val CHOSEN_ITEM_RATIO = 6f
 const val ITEM_RATIO = 15f
 
+const val STEP = 25
 const val CIRCLE_ANIMATION_STEP = 0.01f
+
 const val CIRCLE_ANIMATION_TIME = 8L
 const val CIRCLE_ANIMATION_REVERSE_TIME = 5L
 const val TRANSITION_ANIMATION_TIME = 7L
 
-const val STEP = 25
 const val MIDDLE_POINT = -90
 
 
@@ -49,11 +51,13 @@ fun Carousel(
     onItemSelected: (CarouselItem) -> Unit,
     onItemSelectedPressed: (CarouselItem) -> Unit
 ) {
-    var chosenItemRadius = 14f
-    var itemRadius: Float
+
+    var itemRadius= 14f
 
     var itemSelected: CarouselItem?
     val handler = Handler(Looper.myLooper()!!)
+
+    var carouselViewState by remember { mutableStateOf(CarouselViewState.OtherPoint(isDrag = false)) }
 
     var heightCenter by remember { mutableStateOf((canvasWidth * 0.5f) * 1.5f) }
     var innerRadius by remember { mutableStateOf((canvasWidth * 0.5f) * 1.3f) }
@@ -83,8 +87,8 @@ fun Carousel(
                         itemSelected = getCurrentItemByClick(
                             x = it.x,
                             y = it.y,
-                            xRadius = chosenItemRadius,
-                            yRadius = chosenItemRadius,
+                            xRadius = (itemRadius + STEP) * SELECTED_CIRCLE_RESIZE,
+                            yRadius = (itemRadius + STEP) * SELECTED_CIRCLE_RESIZE,
                             items = items
                         )
                         itemSelected?.let { item ->
@@ -215,14 +219,16 @@ fun Carousel(
             canvasWidth.toPx() / 2,
             heightCenter.toPx()
         )
-        chosenItemRadius = (canvasWidth.toPx() / CHOSEN_ITEM_RATIO)
+//        chosenItemRadius = (canvasWidth.toPx() / CHOSEN_ITEM_RATIO)
         itemRadius = (canvasWidth.toPx() / ITEM_RATIO)
 
         for (i in 0..((items.size - 1) * STEP)) {
-            val angleInRad = (i - (initialChosenItem * STEP) + angle - 90) * ((PI / 180f).toFloat())
+            val angleInRad =
+                (i - (initialChosenItem * STEP) + angle + MIDDLE_POINT) * ((PI / 180f).toFloat())
             drawContext.canvas.nativeCanvas.apply {
 
                 if (i % STEP == 0) {
+                    Log.i("alabama", "i % STEP: ${i % STEP}")
                     var x = calcPointX(
                         radius = innerRadius.toPx(),
                         angleInRad = angleInRad,
@@ -235,26 +241,27 @@ fun Carousel(
                     )
 
                     //Middle Circle Position
-                    if ((radiansToDegrees(radians = angleInRad) < MIDDLE_POINT + STEP / 2) &&
-                        (radiansToDegrees(radians = angleInRad) > MIDDLE_POINT - STEP / 2)
+                    if ((radiansToDegrees(radians = angleInRad).roundToInt() < MIDDLE_POINT + STEP / 2) &&
+                        (radiansToDegrees(radians = angleInRad).roundToInt() > MIDDLE_POINT - STEP / 2)
                     ) {
-                        val value =
-                            (STEP - abs(radiansToDegrees(radians = angleInRad) - MIDDLE_POINT))
-                        y -= value
-
+                        var expandStep = 0
                         if (isDrag) {
+                            expandStep = 10
                         } else {
                             currentItem = (i / STEP)
                         }
+                        val expand = ((STEP - expandStep)  - abs(radiansToDegrees(radians = angleInRad) - MIDDLE_POINT))
+                        y -= expand
+
 
                         //BlurCircle
                         drawCircle(
                             x,
                             y,
-                            (itemRadius + (STEP - abs(radiansToDegrees(radians = angleInRad) - MIDDLE_POINT))) * animationTargetState * 1.15f,
+                            (itemRadius + expand) * animationTargetState * SELECTED_CIRCLE_RESIZE,
                             Paint().apply {
                                 color = items[i / STEP].color
-                                alpha = 65
+                                alpha = if (!isDrag) 65 else 0
                                 maskFilter = BlurMaskFilter(
                                     itemRadius * 0.8f * animationTargetState,
                                     BlurMaskFilter.Blur.SOLID
@@ -266,50 +273,52 @@ fun Carousel(
                         drawCircle(
                             x,
                             y,
-                            (itemRadius + (STEP - abs(radiansToDegrees(radians = angleInRad) - MIDDLE_POINT))) * animationTargetState,
+                            (itemRadius + expand) * animationTargetState,
                             Paint().apply {
                                 color = items[i / STEP].color
+                                maskFilter =
+                                    BlurMaskFilter(itemRadius * 0.2f, BlurMaskFilter.Blur.SOLID)
                             }
                         )
 
-                        //Inner text top
-                        drawText(
-                            items[i / STEP].selectedTextTop,
-                            x,
-                            y - itemRadius / 2,
-                            Paint().apply {
-                                color = style.chosenTextColor
-                                textSize = itemRadius * animationTargetState * 0.4f
-                                textAlign = Paint.Align.CENTER
-                                alpha = setAlpha(!isDrag)
-
-                            }
-                        )
-                        //Inner text bottom
-                        drawText(
-                            items[i / STEP].selectedTextBottom,
-                            x,
-                            y + style.textSize.toPx() / 2 + 10.dp.toPx(),
-                            Paint().apply {
-                                color = style.chosenTextColor
-                                textSize = itemRadius * animationTargetState * 0.4f
-                                typeface = Typeface.DEFAULT_BOLD
-                                textAlign = Paint.Align.CENTER
-                                alpha = setAlpha(!isDrag)
-                            }
-                        )
-
-                        getBitmapFromVectorDrawable(context, items[i / STEP].icon)?.let {
-                            drawBitmap(
-                                it,
-                                x - it.width / 2,
-                                y - it.height / 2,
+                        if (!isDrag) {
+                            //Inner text top
+                            drawText(
+                                items[i / STEP].selectedTextTop,
+                                x,
+                                y - itemRadius / 2,
                                 Paint().apply {
-                                    alpha = setAlpha(isDrag)
+                                    color = style.chosenTextColor
+                                    textSize = itemRadius * animationTargetState * 0.4f
+                                    textAlign = Paint.Align.CENTER
+
+                                }
+                            )
+                            //Inner text bottom
+                            drawText(
+                                items[i / STEP].selectedTextBottom,
+                                x,
+                                y + style.textSize.toPx() / 2 + 10.dp.toPx(),
+                                Paint().apply {
+                                    color = style.chosenTextColor
+                                    textSize = itemRadius * animationTargetState * 0.4f
+                                    typeface = Typeface.DEFAULT_BOLD
+                                    textAlign = Paint.Align.CENTER
                                 }
                             )
                         }
+                        if (isDrag) {
+                            getBitmapFromVectorDrawable(context, items[i / STEP].icon)?.let {
+                                drawBitmap(
+                                    it,
+                                    x - it.width / 2,
+                                    y - it.height / 2,
+                                    Paint().apply {
+                                    }
+                                )
+                            }
 
+                        // Outer text below circle
                         drawText(
                             items[i / STEP].unSelectedText,
                             x,
@@ -321,6 +330,7 @@ fun Carousel(
                                 alpha = setAlpha(isDrag)
                             }
                         )
+                        }
                     } else {
                         if (radiansToDegrees(radians = angleInRad).roundToInt() == MIDDLE_POINT + STEP && !isDrag) {
                             x += STEP
@@ -423,5 +433,7 @@ fun getBitmapFromVectorDrawable(context: Context, drawableId: Int): Bitmap? {
     drawable.draw(canvas)
     return bitmap
 }
+
+
 
 
