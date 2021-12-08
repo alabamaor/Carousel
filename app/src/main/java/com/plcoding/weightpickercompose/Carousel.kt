@@ -51,10 +51,21 @@ fun Carousel(
     onItemSelectedPressed: (CarouselItem) -> Unit
 ) {
 
+//    var itemTextPositionX: Float
+    var itemTextPositionY: Float
     var itemRadius = 14f
+    var canvasItemRadius = itemRadius
+    var canvasMiddleItemPaint: Paint
+    var expandStep = 0f
+    var expand = 0f
+    var itemText = ""
+    var itemTextStyle: Paint
+
+    var carouselViewState: CarouselViewState = CarouselViewState.OtherPoint
+
     var itemSelected: CarouselItem?
     val handler = Handler(Looper.myLooper()!!)
-    
+
     var heightCenter by remember { mutableStateOf((canvasWidth * 0.5f) * 1.5f) }
     var innerRadius by remember { mutableStateOf((canvasWidth * 0.5f) * 1.3f) }
 
@@ -239,134 +250,147 @@ fun Carousel(
                         circleCenterY = circleCenter.y
                     )
 
-                    //Middle Circle Position
-                    if ((radiansToDegrees(radians = angleInRad).roundToInt() < MIDDLE_POINT + STEP / 2) &&
-                        (radiansToDegrees(radians = angleInRad).roundToInt() > MIDDLE_POINT - STEP / 2)
-                    ) {
-                        var expandStep = 0
-                        if (isDrag) {
-                            expandStep = 10
+                    carouselViewState =
+                        if ((radiansToDegrees(radians = angleInRad).roundToInt() < MIDDLE_POINT + STEP / 2) &&
+                            (radiansToDegrees(radians = angleInRad).roundToInt() > MIDDLE_POINT - STEP / 2)
+                        ) {
+                            CarouselViewState.RangedMiddlePoint
                         } else {
-                            currentItem = (i / STEP)
+                            CarouselViewState.OtherPoint
                         }
-                        val expand =
-                            ((STEP - expandStep) - abs(radiansToDegrees(radians = angleInRad) - MIDDLE_POINT))
-                        y -= expand
+                    itemText = items[i / STEP].selectedTextBottom
 
+                    when (val state = carouselViewState) {
+                        is CarouselViewState.RangedMiddlePoint -> {
+                            canvasMiddleItemPaint = Paint().apply {
+                                color = items[i / STEP].color
+                                maskFilter =
+                                    BlurMaskFilter(itemRadius * 0.2f, BlurMaskFilter.Blur.SOLID)
+                            }
+                            if (!isDrag) {
+                                expandStep = 10f
+                                itemTextPositionY = y + style.textSize.toPx() / 2 + 10.dp.toPx()
+                                itemTextStyle = Paint().apply {
+                                    color = style.chosenTextColor
+                                    textSize = itemRadius * animationTargetState * 0.4f
+                                    typeface = Typeface.DEFAULT_BOLD
+                                    textAlign = Paint.Align.CENTER
+                                }
+                            } else {
+                                expandStep =
+                                    -abs(radiansToDegrees(radians = angleInRad) - MIDDLE_POINT)
+                                currentItem = (i / STEP)
+                                itemTextPositionY = y + itemRadius * 2f
+                                itemTextStyle = Paint().apply {
+                                    color = style.textColor
+                                    textSize = itemRadius * 0.5f
+                                    textAlign = Paint.Align.CENTER
+                                }
+                            }
+                            expand = expandStep
+                            y -= expand
+                            canvasItemRadius = (itemRadius + expand)
+                            if (!isDrag) {
+                                canvasItemRadius *= animationTargetState * 1.15f
+                            }
+
+                        }
+                        else -> {
+                            if (radiansToDegrees(radians = angleInRad).roundToInt() == MIDDLE_POINT + STEP && !isDrag) {
+                                x += STEP
+                            } else if (radiansToDegrees(radians = angleInRad).roundToInt() == MIDDLE_POINT - STEP && !isDrag) {
+                                x -= STEP
+                            }
+                            canvasItemRadius = itemRadius
+                            itemTextPositionY = y + itemRadius * 2f
+                            canvasMiddleItemPaint = Paint().apply {
+                                color = items[i / STEP].color
+                                maskFilter =
+                                    BlurMaskFilter(itemRadius * 0.2f, BlurMaskFilter.Blur.SOLID)
+                            }
+                            itemTextStyle = Paint().apply {
+                                color = style.textColor
+                                textSize = itemRadius * 0.5f
+                                textAlign = Paint.Align.CENTER
+                            }
+                        }
+                    }
+
+
+                    /* //ShadowCircle
+                     drawCircle(
+                         x + 5.dp.toPx(),
+                         y + 5.dp.toPx(),
+                         canvasItemRadius* 0.7f,
+                         Paint().apply {
+                             alpha= 5
+                             color = items[i / STEP].color
+                             maskFilter = BlurMaskFilter(
+                                 canvasItemRadius * animationTargetState,
+                                 BlurMaskFilter.Blur.OUTER
+                             )
+                         }
+                     )*/
+
+
+                    if (carouselViewState == CarouselViewState.RangedMiddlePoint && !isDrag) {
 
                         //BlurCircle
                         drawCircle(
                             x,
                             y,
-                            (itemRadius + expand) * animationTargetState * 1.15f,
+                            canvasItemRadius * 1.2f,
                             Paint().apply {
                                 color = items[i / STEP].color
-                                alpha = if (!isDrag) 65 else 0
+                                alpha = if (!isDrag) 35 else 0
                                 maskFilter = BlurMaskFilter(
                                     itemRadius * 0.8f * animationTargetState,
                                     BlurMaskFilter.Blur.SOLID
                                 )
                             }
                         )
+                    }
 
-                        //MainCircle
-                        drawCircle(
+                    //MainCircle
+                    drawCircle(
+                        x,
+                        y,
+                        canvasItemRadius,
+                        canvasMiddleItemPaint
+                    )
+
+                    //TopText
+                    if (carouselViewState == CarouselViewState.RangedMiddlePoint && !isDrag) {
+                        drawText(
+                            items[i / STEP].selectedTextTop,
                             x,
-                            y,
-                            (itemRadius + expand) * animationTargetState,
+                            y - itemRadius / 2,
                             Paint().apply {
-                                color = items[i / STEP].color
-                                maskFilter =
-                                    BlurMaskFilter(itemRadius * 0.2f, BlurMaskFilter.Blur.SOLID)
+                                color = style.chosenTextColor
+                                textSize = itemRadius * animationTargetState * 0.4f
+                                textAlign = Paint.Align.CENTER
                             }
                         )
+                    }
 
-                        if (!isDrag) {
-                            //Inner text top
-                            drawText(
-                                items[i / STEP].selectedTextTop,
-                                x,
-                                y - itemRadius / 2,
-                                Paint().apply {
-                                    color = style.chosenTextColor
-                                    textSize = itemRadius * animationTargetState * 0.4f
-                                    textAlign = Paint.Align.CENTER
-
-                                }
-                            )
-                            //Inner text bottom
-                            drawText(
-                                items[i / STEP].selectedTextBottom,
-                                x,
-                                y + style.textSize.toPx() / 2 + 10.dp.toPx(),
-                                Paint().apply {
-                                    color = style.chosenTextColor
-                                    textSize = itemRadius * animationTargetState * 0.4f
-                                    typeface = Typeface.DEFAULT_BOLD
-                                    textAlign = Paint.Align.CENTER
-                                }
-                            )
-                        }
-                        if (isDrag) {
-                            getBitmapFromVectorDrawable(context, items[i / STEP].icon)?.let {
-                                drawBitmap(
-                                    it,
-                                    x - it.width / 2,
-                                    y - it.height / 2,
-                                    Paint().apply {
-                                    }
-                                )
-                            }
-
-                            // Outer text below circle
-                            drawText(
-                                items[i / STEP].unSelectedText,
-                                x,
-                                y + itemRadius * 2f,
-                                Paint().apply {
-                                    color = style.textColor
-                                    textSize = itemRadius * 0.5f
-                                    textAlign = Paint.Align.CENTER
-                                    alpha = setAlpha(isDrag)
-                                }
-                            )
-                        }
-                    } else {
-                        if (radiansToDegrees(radians = angleInRad).roundToInt() == MIDDLE_POINT + STEP && !isDrag) {
-                            x += STEP
-                        } else if (radiansToDegrees(radians = angleInRad).roundToInt() == MIDDLE_POINT - STEP && !isDrag) {
-                            x -= STEP
-                        }
-                        drawCircle(
-                            x,
-                            y,
-                            itemRadius,
-                            Paint().apply {
-                                color = items[i / STEP].color
-                                maskFilter =
-                                    BlurMaskFilter(itemRadius * 0.2f, BlurMaskFilter.Blur.SOLID)
-//                                setShadowLayer(itemRadius, x, y - itemRadius, items[i / step].color)
-                            }
-                        )
+                    //BottomText
+                    drawText(
+                        itemText,
+                        x,
+                        itemTextPositionY,
+                        itemTextStyle
+                    )
+                    if (carouselViewState == CarouselViewState.OtherPoint || (carouselViewState == CarouselViewState.RangedMiddlePoint && isDrag)) {
                         getBitmapFromVectorDrawable(context, items[i / STEP].icon)?.let {
                             drawBitmap(
                                 it,
                                 x - it.width / 2,
                                 y - it.height / 2,
-                                Paint().apply {
-                                })
+                                Paint()
+                            )
                         }
-                        drawText(
-                            items[i / STEP].unSelectedText,
-                            x,
-                            y + itemRadius * 2f,
-                            Paint().apply {
-                                color = style.textColor
-                                textSize = itemRadius * 0.5f
-                                textAlign = Paint.Align.CENTER
-                            }
-                        )
                     }
+
                     items[i / STEP].x = x
                     items[i / STEP].y = y
                 }
