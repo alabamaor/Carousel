@@ -78,7 +78,63 @@ fun Carousel(
     var animationTargetState by remember { mutableStateOf(SELECTED_CIRCLE_SIZE) }
 
 
-    Canvas(
+
+var dragEndRunnable = Runnable{}
+
+val tapRunnable = Runnable {
+    val old = oldAngle
+    var iterator: Int
+    val animateSteps = abs(
+        calcClosestAngle(
+            angleRoundToInt = startedAngle.roundToInt(),
+            step = STEP
+        ).toInt()
+    )
+
+    var innerI2 = 0
+
+    if (animationTargetState > INITIAL_CIRCLE_SIZE) {
+        animationTargetState -= CIRCLE_ANIMATION_STEP
+    }
+    if (animationTargetState <= INITIAL_CIRCLE_SIZE) {
+        isDrag = true
+
+        for (i in 1..animateSteps) {
+            handler.postDelayed({
+                iterator = i
+                if (startedAngle > 0) {
+                    iterator = i * -1
+                }
+                angle = (old + iterator).coerceIn(
+                    minimumValue = (initialChosenItem * STEP) - ((items.size - 1) * STEP).toFloat(),
+                    maximumValue = (initialChosenItem * STEP).toFloat()
+                )
+                oldAngle = angle
+                if (i == animateSteps - 1) {
+                    isDrag = false
+                    while (innerI2 <= (SELECTED_CIRCLE_SIZE - animationTargetState) / CIRCLE_ANIMATION_STEP) {
+                        handler.postDelayed(
+                            {
+                                if (animationTargetState < SELECTED_CIRCLE_SIZE) {
+                                    animationTargetState += CIRCLE_ANIMATION_STEP
+                                }
+                                if (animationTargetState >= SELECTED_CIRCLE_SIZE) {
+                                    isAnimationRunning = false
+                                }
+                            },
+                            innerI2 * CIRCLE_ANIMATION_TIME
+                        )
+                        innerI2++
+                    }
+                }
+            }, i * TRANSITION_ANIMATION_TIME)
+        }
+    }
+}
+
+
+
+Canvas(
         modifier = modifier
             .pointerInput(true) {
                 detectTapGestures(
@@ -106,62 +162,13 @@ fun Carousel(
                             itemSelected?.let { item ->
                                 onItemSelected(item)
                                 if (item == items[currentItem]) {
-                                    onItemSelectedPressed.invoke(item)
                                     isAnimationRunning = false
+                                    onItemSelectedPressed.invoke(item)
                                 } else {
-                                    val old = oldAngle
-                                    var iterator: Int
-                                    val animateSteps = abs(
-                                        calcClosestAngle(
-                                            angleRoundToInt = startedAngle.roundToInt(),
-                                            step = STEP
-                                        ).toInt()
-                                    )
-
                                     var innerI1 = 0
-                                    var innerI2 = 0
-
                                     isDrag = false
                                     while (innerI1 <= (SELECTED_CIRCLE_SIZE - INITIAL_CIRCLE_SIZE) / CIRCLE_ANIMATION_STEP) {
-                                        handler.postDelayed({
-                                            if (animationTargetState > INITIAL_CIRCLE_SIZE) {
-                                                animationTargetState -= CIRCLE_ANIMATION_STEP
-                                            }
-                                            if (animationTargetState <= INITIAL_CIRCLE_SIZE) {
-                                                isDrag = true
-
-                                                for (i in 1..animateSteps) {
-                                                    handler.postDelayed({
-                                                        iterator = i
-                                                        if (startedAngle > 0) {
-                                                            iterator = i * -1
-                                                        }
-                                                        angle = (old + iterator).coerceIn(
-                                                            minimumValue = (initialChosenItem * STEP) - ((items.size - 1) * STEP).toFloat(),
-                                                            maximumValue = (initialChosenItem * STEP).toFloat()
-                                                        )
-                                                        oldAngle = angle
-                                                        if (i == animateSteps - 1) {
-                                                            isDrag = false
-                                                            while (innerI2 <= (SELECTED_CIRCLE_SIZE - animationTargetState) / CIRCLE_ANIMATION_STEP) {
-                                                                handler.postDelayed(
-                                                                    {
-                                                                        if (animationTargetState < SELECTED_CIRCLE_SIZE) {
-                                                                            animationTargetState += CIRCLE_ANIMATION_STEP
-                                                                        }
-                                                                        if (animationTargetState >= SELECTED_CIRCLE_SIZE) {
-                                                                            isAnimationRunning = false
-                                                                        }
-                                                                    },
-                                                                    innerI2 * CIRCLE_ANIMATION_TIME
-                                                                )
-                                                                innerI2++
-                                                            }
-                                                        }
-                                                    }, i * TRANSITION_ANIMATION_TIME)
-                                                }
-                                            }
-                                        }, (innerI1 * CIRCLE_ANIMATION_REVERSE_TIME ))
+                                        handler.postDelayed(tapRunnable, (innerI1 * CIRCLE_ANIMATION_REVERSE_TIME ))
                                         innerI1++
                                     }
                                 }
@@ -175,12 +182,19 @@ fun Carousel(
                     onDragStart = {
 //                        STEP = DRAG_STEP
                         Log.i("alabama", "onDragStart")
-                        innerRadius -= canvasHeight * 0.2f
-                        heightCenter -= canvasHeight * 0.2f
+
+                        heightCenter = canvasWidth * 0.75f
+                        innerRadius = canvasWidth * 0.65f
                         val newAngle = -atan2(
                             circleCenter.x - it.x,
                             circleCenter.y - it.y
                         ) * (180f / PI.toFloat())
+                        handler.removeCallbacks(tapRunnable)
+                        handler.removeCallbacks(dragEndRunnable)
+
+                        innerRadius -= canvasHeight * 0.2f
+                        heightCenter -= canvasHeight * 0.2f
+                        isAnimationRunning = false
                         startedAngle = newAngle
                         animationTargetState = INITIAL_CIRCLE_SIZE
 //                        var innerI = 0
@@ -209,6 +223,12 @@ fun Carousel(
                         ) * (180f / PI.toFloat())
                         if (abs(startedAngle).roundToInt() != abs(touchAngle).roundToInt()) {
                             isDrag = true
+
+                            var a = - (0.5*STEP).roundToInt()
+                            var b = oldAngle
+                            var c = touchAngle
+                            var d = startedAngle
+
                             val newAngle = oldAngle + (touchAngle - startedAngle)
 
                             angle = newAngle
@@ -234,6 +254,7 @@ fun Carousel(
                         for (i in 0..animatedStep) {
                             handler.postDelayed({
                                 var iterator = i
+
                                 if (old > new) {
                                     iterator = i * -1
                                 }
@@ -247,22 +268,23 @@ fun Carousel(
                                     )
                                     var innerI = 0
                                     while (innerI <= (SELECTED_CIRCLE_SIZE - animationTargetState) / CIRCLE_ANIMATION_STEP) {
-                                        handler.postDelayed({
+                                        dragEndRunnable = Runnable {
                                             if (animationTargetState < SELECTED_CIRCLE_SIZE) {
                                                 animationTargetState += CIRCLE_ANIMATION_STEP
                                             } else if (animationTargetState >= SELECTED_CIRCLE_SIZE) {
+                                                heightCenter = canvasWidth * 0.75f
+                                                innerRadius = canvasWidth * 0.65f
                                                 onItemSelected(items[currentItem])
                                             }
                                             isDrag = false
-                                        }, innerI * CIRCLE_ANIMATION_TIME)
+                                        }
+                                        handler.postDelayed(dragEndRunnable, innerI * CIRCLE_ANIMATION_TIME)
                                         innerI++
                                     }
                                 }
                             }, i * TRANSITION_ANIMATION_TIME)
                         }
 
-                        heightCenter = canvasWidth * 0.75f
-                        innerRadius = canvasWidth * 0.65f
                     }
                 )
             }
