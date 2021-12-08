@@ -27,9 +27,10 @@ const val ITEM_RATIO = 15f
 
 const val STEP = 25
 const val CIRCLE_ANIMATION_STEP = 0.01f
+const val FAST_CIRCLE_ANIMATION_STEP = 0.1f
 
 const val CIRCLE_ANIMATION_TIME = 8L
-const val CIRCLE_ANIMATION_REVERSE_TIME = 5L
+const val CIRCLE_ANIMATION_REVERSE_TIME = 2L
 const val TRANSITION_ANIMATION_TIME = 7L
 
 const val MIDDLE_POINT = -90
@@ -60,7 +61,6 @@ fun Carousel(
     var itemText = ""
     var itemTextStyle: Paint
 
-//    var isAnimationRunning = false
     var carouselViewState: CarouselViewState = CarouselViewState.OtherPoint
     var itemSelected: CarouselItem?
     val handler = Handler(Looper.myLooper()!!)
@@ -69,6 +69,7 @@ fun Carousel(
     var innerRadius by remember { mutableStateOf((canvasWidth * 0.5f) * 1.3f) }
 
     var currentItem by remember { mutableStateOf(initialChosenItem) }
+    var isAnimationRunning by remember { mutableStateOf(false) }
     var circleCenter by remember { mutableStateOf(Offset.Zero) }
     var angle by remember { mutableStateOf(0f) }
     var startedAngle by remember { mutableStateOf(0f) }
@@ -87,74 +88,82 @@ fun Carousel(
                             circleCenter.x - it.x,
                             circleCenter.y - it.y
                         ) * (180f / PI.toFloat())
-                        startedAngle = newAngle
+                        if (!isAnimationRunning) {
+                            startedAngle = newAngle
+                        }
                     },
                     onTap = {
                         Log.i("alabama", "onTap")
-                        itemSelected = getCurrentItemByClick(
-                            x = it.x,
-                            y = it.y,
-                            xRadius = canvasWidth / CHOSEN_ITEM_RATIO,
-                            yRadius = canvasWidth / CHOSEN_ITEM_RATIO,
-                            items = items
-                        )
-                        itemSelected?.let { item ->
-                            onItemSelected(item)
-                            if (item == items[currentItem]) {
-                                onItemSelectedPressed.invoke(item)
-                            } else {
-                                val old = oldAngle
-                                var iterator: Int
-                                val animateSteps = abs(
-                                    calcClosestAngle(
-                                        angleRoundToInt = startedAngle.roundToInt(),
-                                        step = STEP
-                                    ).toInt()
-                                )
+                        if (!isAnimationRunning) {
+                            isAnimationRunning = true
+                            itemSelected = getCurrentItemByClick(
+                                x = it.x,
+                                y = it.y,
+                                xRadius = canvasWidth / CHOSEN_ITEM_RATIO,
+                                yRadius = canvasWidth / CHOSEN_ITEM_RATIO,
+                                items = items
+                            )
+                            itemSelected?.let { item ->
+                                onItemSelected(item)
+                                if (item == items[currentItem]) {
+                                    onItemSelectedPressed.invoke(item)
+                                    isAnimationRunning = false
+                                } else {
+                                    val old = oldAngle
+                                    var iterator: Int
+                                    val animateSteps = abs(
+                                        calcClosestAngle(
+                                            angleRoundToInt = startedAngle.roundToInt(),
+                                            step = STEP
+                                        ).toInt()
+                                    )
 
-                                var innerI1 = 0
-                                var innerI2 = 0
+                                    var innerI1 = 0
+                                    var innerI2 = 0
 
-                                isDrag = false
-//                                isAnimationRunning = true
-                                while (innerI1 <= (SELECTED_CIRCLE_SIZE - INITIAL_CIRCLE_SIZE) / CIRCLE_ANIMATION_STEP) {
-                                    handler.postDelayed({
-                                        if (animationTargetState > INITIAL_CIRCLE_SIZE) {
-                                            animationTargetState -= CIRCLE_ANIMATION_STEP
-                                        }
-                                        if (animationTargetState <= INITIAL_CIRCLE_SIZE) {
-                                            isDrag = true
-
-                                            for (i in 1..animateSteps) {
-                                                handler.postDelayed({
-                                                    iterator = i
-                                                    if (startedAngle > 0) {
-                                                        iterator = i * -1
-                                                    }
-                                                    angle = (old + iterator).coerceIn(
-                                                        minimumValue = (initialChosenItem * STEP) - ((items.size - 1) * STEP).toFloat(),
-                                                        maximumValue = (initialChosenItem * STEP).toFloat()
-                                                    )
-                                                    oldAngle = angle
-                                                    if (i == animateSteps - 1) {
-                                                        isDrag = false
-                                                        while (innerI2 <= (SELECTED_CIRCLE_SIZE - animationTargetState) / CIRCLE_ANIMATION_STEP) {
-                                                            handler.postDelayed(
-                                                                {
-                                                                    if (animationTargetState < SELECTED_CIRCLE_SIZE) {
-                                                                        animationTargetState += CIRCLE_ANIMATION_STEP
-                                                                    }
-                                                                },
-                                                                innerI2 * CIRCLE_ANIMATION_TIME
-                                                            )
-                                                            innerI2++
-                                                        }
-                                                    }
-                                                }, i * TRANSITION_ANIMATION_TIME)
+                                    isDrag = false
+                                    while (innerI1 <= (SELECTED_CIRCLE_SIZE - INITIAL_CIRCLE_SIZE) / CIRCLE_ANIMATION_STEP) {
+                                        handler.postDelayed({
+                                            if (animationTargetState > INITIAL_CIRCLE_SIZE) {
+                                                animationTargetState -= CIRCLE_ANIMATION_STEP
                                             }
-                                        }
-                                    }, (innerI1 * CIRCLE_ANIMATION_REVERSE_TIME))
-                                    innerI1++
+                                            if (animationTargetState <= INITIAL_CIRCLE_SIZE) {
+                                                isDrag = true
+
+                                                for (i in 1..animateSteps) {
+                                                    handler.postDelayed({
+                                                        iterator = i
+                                                        if (startedAngle > 0) {
+                                                            iterator = i * -1
+                                                        }
+                                                        angle = (old + iterator).coerceIn(
+                                                            minimumValue = (initialChosenItem * STEP) - ((items.size - 1) * STEP).toFloat(),
+                                                            maximumValue = (initialChosenItem * STEP).toFloat()
+                                                        )
+                                                        oldAngle = angle
+                                                        if (i == animateSteps - 1) {
+                                                            isDrag = false
+                                                            while (innerI2 <= (SELECTED_CIRCLE_SIZE - animationTargetState) / CIRCLE_ANIMATION_STEP) {
+                                                                handler.postDelayed(
+                                                                    {
+                                                                        if (animationTargetState < SELECTED_CIRCLE_SIZE) {
+                                                                            animationTargetState += CIRCLE_ANIMATION_STEP
+                                                                        }
+                                                                        if (animationTargetState >= SELECTED_CIRCLE_SIZE) {
+                                                                            isAnimationRunning = false
+                                                                        }
+                                                                    },
+                                                                    innerI2 * CIRCLE_ANIMATION_TIME
+                                                                )
+                                                                innerI2++
+                                                            }
+                                                        }
+                                                    }, i * TRANSITION_ANIMATION_TIME)
+                                                }
+                                            }
+                                        }, (innerI1 * CIRCLE_ANIMATION_REVERSE_TIME ))
+                                        innerI1++
+                                    }
                                 }
                             }
                         }
@@ -309,7 +318,8 @@ fun Carousel(
                                     textAlign = Paint.Align.CENTER
                                 }
                             } else {
-                                expandStep = - abs(radiansToDegrees(radians = angleInRad) - MIDDLE_POINT)
+                                expandStep =
+                                    -abs(radiansToDegrees(radians = angleInRad) - MIDDLE_POINT)
                                 currentItem = (i / STEP)
                                 itemTextPositionY = y + itemRadius * 2f
                                 itemTextStyle = Paint().apply {
