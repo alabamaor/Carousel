@@ -56,7 +56,7 @@ fun Carousel(
     var itemRadius = 14f
     var canvasItemRadius = itemRadius
     var canvasMiddleItemPaint: Paint
-    var expandStep = 0f
+    var expandStep = 0
     var expand = 0f
     var itemText = ""
     var itemTextStyle: Paint
@@ -250,19 +250,19 @@ fun Carousel(
                                         handler.postDelayed({
                                             if (animationTargetState < SELECTED_CIRCLE_SIZE) {
                                                 animationTargetState += CIRCLE_ANIMATION_STEP
-                                            } else if (animationTargetState >= SELECTED_CIRCLE_SIZE) {
+                                            }
+                                            else if (animationTargetState >= SELECTED_CIRCLE_SIZE){
                                                 onItemSelected(items[currentItem])
                                             }
-                                            isDrag = false
+                                                isDrag = false
                                         }, innerI * CIRCLE_ANIMATION_TIME)
                                         innerI++
                                     }
+                                    heightCenter = canvasWidth * 0.75f
+                                    innerRadius = canvasWidth * 0.65f
                                 }
                             }, i * TRANSITION_ANIMATION_TIME)
                         }
-
-                        heightCenter = canvasWidth * 0.75f
-                        innerRadius = canvasWidth * 0.65f
                     }
                 )
             }
@@ -309,7 +309,7 @@ fun Carousel(
                                     BlurMaskFilter(itemRadius * 0.2f, BlurMaskFilter.Blur.SOLID)
                             }
                             if (!isDrag) {
-                                expandStep = 10f
+                                expandStep = 10
                                 itemTextPositionY = y + style.textSize.toPx() / 2 + 10.dp.toPx()
                                 itemTextStyle = Paint().apply {
                                     color = style.chosenTextColor
@@ -318,8 +318,7 @@ fun Carousel(
                                     textAlign = Paint.Align.CENTER
                                 }
                             } else {
-                                expandStep =
-                                    -abs(radiansToDegrees(radians = angleInRad) - MIDDLE_POINT)
+                                expandStep = 0
                                 currentItem = (i / STEP)
                                 itemTextPositionY = y + itemRadius * 2f
                                 itemTextStyle = Paint().apply {
@@ -328,7 +327,8 @@ fun Carousel(
                                     textAlign = Paint.Align.CENTER
                                 }
                             }
-                            expand = expandStep
+                            expand =
+                                (STEP - expandStep) - abs(radiansToDegrees(radians = angleInRad) - MIDDLE_POINT)
                             y -= expand
                             canvasItemRadius = (itemRadius + expand)
                             if (!isDrag) {
@@ -438,6 +438,10 @@ fun Carousel(
             }
         }
     }
+}
+
+fun setAlpha(isVisible: Boolean): Int {
+    return if (isVisible) 255 else 0
 }
 
 fun degreesToRadians(degrees: Float): Double {
