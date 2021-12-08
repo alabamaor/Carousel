@@ -29,7 +29,7 @@ const val STEP = 25
 const val CIRCLE_ANIMATION_STEP = 0.01f
 const val FAST_CIRCLE_ANIMATION_STEP = 0.1f
 
-const val CIRCLE_ANIMATION_TIME = 8L
+const val CIRCLE_ANIMATION_TIME = 3L
 const val CIRCLE_ANIMATION_REVERSE_TIME = 2L
 const val TRANSITION_ANIMATION_TIME = 7L
 
@@ -56,14 +56,13 @@ fun Carousel(
     var itemRadius = 14f
     var canvasItemRadius = itemRadius
     var canvasMiddleItemPaint: Paint
-    var expandStep = 0f
     var expand = 0f
     var itemText = ""
     var itemTextStyle: Paint
 
     var carouselViewState: CarouselViewState = CarouselViewState.OtherPoint
 
-    var itemSelected: CarouselItem?
+    var itemSelected: CarouselItem? = items[(items.size - 1) / 2]
     val handler = Handler(Looper.myLooper()!!)
 
     var heightCenter by remember { mutableStateOf((canvasWidth * 0.5f) * 1.5f) }
@@ -77,6 +76,12 @@ fun Carousel(
     var oldAngle by remember { mutableStateOf(angle) }
     var isDrag by remember { mutableStateOf(false) }
     var animationTargetState by remember { mutableStateOf(SELECTED_CIRCLE_SIZE) }
+
+    var tapRunnable = Runnable {
+        if (animationTargetState < SELECTED_CIRCLE_SIZE) {
+            animationTargetState += CIRCLE_ANIMATION_STEP
+        }
+    }
 
     Canvas(
         modifier = modifier
@@ -131,11 +136,10 @@ fun Carousel(
                                             isDrag = false
                                             var innerI = 0
                                             while (innerI <= (SELECTED_CIRCLE_SIZE - animationTargetState) / CIRCLE_ANIMATION_STEP) {
-                                                handler.postDelayed({
-                                                    if (animationTargetState < SELECTED_CIRCLE_SIZE) {
-                                                        animationTargetState += CIRCLE_ANIMATION_STEP
-                                                    }
-                                                }, innerI * CIRCLE_ANIMATION_TIME)
+                                                handler.postDelayed(
+                                                    tapRunnable,
+                                                    innerI * CIRCLE_ANIMATION_TIME
+                                                )
                                                 innerI++
                                             }
                                         }
@@ -238,7 +242,7 @@ fun Carousel(
             drawContext.canvas.nativeCanvas.apply {
 
                 if (i % STEP == 0) {
-                    Log.i("alabama", "i % STEP: ${i % STEP}")
+//                    Log.i("alabama", "i % STEP: ${i % STEP}")
                     var x = calcPointX(
                         radius = innerRadius,
                         angleInRad = angleInRad,
@@ -251,8 +255,8 @@ fun Carousel(
                     )
 
                     carouselViewState =
-                        if ((radiansToDegrees(radians = angleInRad).roundToInt() < MIDDLE_POINT + STEP / 2) &&
-                            (radiansToDegrees(radians = angleInRad).roundToInt() > MIDDLE_POINT - STEP / 2)
+                        if ((radiansToDegrees(radians = angleInRad).toInt() < MIDDLE_POINT + STEP / 2) &&
+                            (radiansToDegrees(radians = angleInRad).toInt() > MIDDLE_POINT - STEP / 2)
                         ) {
                             CarouselViewState.RangedMiddlePoint
                         } else {
@@ -268,7 +272,7 @@ fun Carousel(
                                     BlurMaskFilter(itemRadius * 0.2f, BlurMaskFilter.Blur.SOLID)
                             }
                             if (!isDrag) {
-                                expandStep = 10f
+                                expand = 10f
                                 itemTextPositionY = y + style.textSize.toPx() / 2 + 10.dp.toPx()
                                 itemTextStyle = Paint().apply {
                                     color = style.chosenTextColor
@@ -277,9 +281,12 @@ fun Carousel(
                                     textAlign = Paint.Align.CENTER
                                 }
                             } else {
-                                expandStep =
-                                    -abs(radiansToDegrees(radians = angleInRad) - MIDDLE_POINT)
                                 currentItem = (i / STEP)
+                                expand =  -(abs(radiansToDegrees(radians = angleInRad).roundToInt() - MIDDLE_POINT)*1.5f)+ itemRadius/3.5f
+//                                    -abs(radiansToDegrees(radians = angleInRad) - MIDDLE_POINT) + (canvasWidth / ITEM_RATIO) - calcRadius(
+//                                    Offset(x, y),
+//                                    Offset(itemSelected!!.x, itemSelected!!.y)
+//                                )
                                 itemTextPositionY = y + itemRadius * 2f
                                 itemTextStyle = Paint().apply {
                                     color = style.textColor
@@ -287,9 +294,12 @@ fun Carousel(
                                     textAlign = Paint.Align.CENTER
                                 }
                             }
-                            expand = expandStep
                             y -= expand
                             canvasItemRadius = (itemRadius + expand)
+                            Log.i(
+                                "alabama",
+                                "canvasItemRadius: $canvasItemRadius itemRadius: $itemRadius expand: $expand radiansToDegrees(radians = angleInRad): ${radiansToDegrees(radians = angleInRad)}"
+                            )
                             if (!isDrag) {
                                 canvasItemRadius *= animationTargetState * 1.15f
                             }
@@ -444,6 +454,10 @@ fun calcPointX(circleCenterX: Float, angleInRad: Float, radius: Float): Float {
 
 fun calcPointY(circleCenterY: Float, angleInRad: Float, radius: Float): Float {
     return radius * sin(angleInRad) + circleCenterY
+}
+
+fun calcRadius(point1: Offset, point2: Offset): Float {
+    return sqrt((point2.x - point1.x).pow(2f) + (point2.y - point1.y).pow(2f))
 }
 
 fun getBitmapFromVectorDrawable(context: Context, drawableId: Int): Bitmap? {
