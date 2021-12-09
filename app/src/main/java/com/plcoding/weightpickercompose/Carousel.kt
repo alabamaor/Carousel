@@ -27,7 +27,7 @@ const val ITEM_RATIO = 15f
 
 const val STEP = 25
 const val TAP_CIRCLE_ANIMATION_STEP = 0.3f
-const val DRAG_CIRCLE_ANIMATION_STEP = 0.01f
+const val DRAG_CIRCLE_ANIMATION_STEP = 0.3f
 const val CIRCLE_ANIMATION_STEP = 0.02f
 const val CIRCLE_ANIMATION_TIME = 3L
 
@@ -39,7 +39,7 @@ const val TRANSITION_ANIMATION_TIME = 1L
 const val MIDDLE_POINT = -90
 
 const val INITIAL_HEIGHT_CENTER = 0.75f
-const val  INITIAL_INNER_RADIUS  = 0.65f
+const val INITIAL_INNER_RADIUS = 0.65f
 
 
 @ExperimentalTime
@@ -108,10 +108,10 @@ fun Carousel(
             if (movementCountSteps == animateMovementSteps - 1f) {
                 isDrag = false
                 heightCenter = canvasWidth * INITIAL_HEIGHT_CENTER
-                innerRadius = canvasWidth  * INITIAL_INNER_RADIUS
+                innerRadius = canvasWidth * INITIAL_INNER_RADIUS
             }
 
-            if (movementCountSteps >= animateMovementSteps - 1) {
+            if (movementCountSteps > animateMovementSteps - 1) {
                 if (animationTargetState < SELECTED_CIRCLE_SIZE) {
                     animationTargetState += CIRCLE_ANIMATION_STEP
                 }
@@ -131,7 +131,7 @@ fun Carousel(
             var iterator = movementCountSteps
             if (movementCountSteps < animateMovementSteps) {
                 if (savedOldAngle > savedNewAngle) {
-                    iterator = (movementCountSteps + DRAG_CIRCLE_ANIMATION_STEP) * -1
+                    iterator = movementCountSteps * -1
                 }
                 angle = (savedOldAngle + iterator).coerceIn(
                     minimumValue = (initialChosenItem * STEP) - ((items.size - 1) * STEP).toFloat(),
@@ -139,17 +139,16 @@ fun Carousel(
                 )
                 oldAngle = angle
             }
-            if (movementCountSteps == animateMovementSteps - 1f) {
+            if (movementCountSteps.toInt() == animateMovementSteps - 1) {
                 isDrag = false
 
                 currentItem = initialChosenItem - (angle / STEP).toInt()
                 onItemSelected(items[currentItem])
-
                 heightCenter = canvasWidth * INITIAL_HEIGHT_CENTER
-                innerRadius = canvasWidth  * INITIAL_INNER_RADIUS
+                innerRadius = canvasWidth * INITIAL_INNER_RADIUS
             }
 
-            if (movementCountSteps >= animateMovementSteps - 1) {
+            if (movementCountSteps > animateMovementSteps - 1) {
                 if (animationTargetState < SELECTED_CIRCLE_SIZE) {
                     animationTargetState += CIRCLE_ANIMATION_STEP
                 }
@@ -262,8 +261,8 @@ fun Carousel(
                             animationTargetState = INITIAL_CIRCLE_SIZE
                             animateCircleSteps =
                                 ((SELECTED_CIRCLE_SIZE - animationTargetState) / CIRCLE_ANIMATION_STEP).toInt()
-                            animateMovementSteps = abs(savedOldAngle - savedNewAngle).toInt()
-
+                            val range = if ((savedOldAngle - savedNewAngle).toInt() == 0) 1 else (savedOldAngle - savedNewAngle).toInt()
+                            animateMovementSteps = abs(range)
                             movementMaxSteps = (animateMovementSteps + animateCircleSteps)
                             movementCountSteps = 0f
                             isDrag = true
@@ -325,8 +324,10 @@ fun Carousel(
                                 }
                             } else {
                                 currentItem = (i / STEP)
-                                expand = if (isAnimationActive) 0f else -(abs(radiansToDegrees(radians = angleInRad).roundToInt() - MIDDLE_POINT) * 1.5f) + itemRadius / 3.5f
-                                itemTextPositionY = if (isAnimationActive) itemRadius else y + itemRadius * 2f
+                                expand =
+                                    if (isAnimationActive) 0f else -(abs(radiansToDegrees(radians = angleInRad).roundToInt() - MIDDLE_POINT) * 1.5f) + itemRadius / 3.5f
+                                itemTextPositionY =
+                                    if (isAnimationActive) itemRadius else y + itemRadius * 2f
                                 itemTextStyle = Paint().apply {
                                     color = style.textColor
                                     textSize = itemRadius * 0.5f
