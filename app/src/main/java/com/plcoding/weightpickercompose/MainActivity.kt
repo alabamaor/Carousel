@@ -84,7 +84,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             val configuration = LocalConfiguration.current
 
-            var chosenCarouselValue by remember {
+            var chosenCarouselValue = remember {
                 mutableStateOf(items[items.size / 2])
             }
 
@@ -128,7 +128,7 @@ class MainActivity : ComponentActivity() {
                         cardWidth = (screenWidth.value * 0.9).dp,
                         cardHeight = (screenHeight.value * 0.63).dp,
                         screens = items,
-                        selectedScreen = chosenCarouselValue,
+                        selectedScreen = chosenCarouselValue.value,
                         onSelectedScreenChanged = ::onSelectedCategoryChanged
                     )
                 }
@@ -144,7 +144,7 @@ class MainActivity : ComponentActivity() {
                     canvasHeight = resources.displayMetrics.heightPixels *0.25f,
                     style = CarouselStyle(),
                     items = items,
-                    onItemSelected = { chosenCarouselValue = it }
+                    onItemSelected = { chosenCarouselValue.value = it }
                 ) { onItemSelectedPressed(it) }
             }
         }
