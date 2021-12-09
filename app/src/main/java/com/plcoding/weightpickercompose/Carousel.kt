@@ -261,7 +261,8 @@ fun Carousel(
                             animationTargetState = INITIAL_CIRCLE_SIZE
                             animateCircleSteps =
                                 ((SELECTED_CIRCLE_SIZE - animationTargetState) / CIRCLE_ANIMATION_STEP).toInt()
-                            val range = if ((savedOldAngle - savedNewAngle).toInt() == 0) 1 else (savedOldAngle - savedNewAngle).toInt()
+                            val range =
+                                if ((savedOldAngle - savedNewAngle).toInt() == 0) 1 else (savedOldAngle - savedNewAngle).toInt()
                             animateMovementSteps = abs(range)
                             movementMaxSteps = (animateMovementSteps + animateCircleSteps)
                             movementCountSteps = 0f
