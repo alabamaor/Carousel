@@ -41,6 +41,9 @@ const val MIDDLE_POINT = -90
 const val INITIAL_HEIGHT_CENTER = 0.75f
 const val INITIAL_INNER_RADIUS = 0.65f
 
+const val REDUCE_INNER_RADIUS = 0.2f
+const val REDUCE_HEIGHT_CENTER = 0.2f
+
 
 @ExperimentalTime
 @ExperimentalComposeUiApi
@@ -84,7 +87,7 @@ fun Carousel(
     var animationTargetState by remember { mutableStateOf(SELECTED_CIRCLE_SIZE) }
 
     var isAnimationActive = false
-    var animateMovementSteps = 0
+    var animateMovementSteps = 0f
     var animateCircleSteps = 0
     var movementMaxSteps = 0
     var movementCountSteps = 0f
@@ -126,26 +129,33 @@ fun Carousel(
         }
     }
 
+    val reduceCircleRunnable: Runnable = object : Runnable {
+        override fun run() {
+
+        }
+    }
+
     val dragRunnable: Runnable = object : Runnable {
         override fun run() {
             var iterator = movementCountSteps
             if (movementCountSteps < animateMovementSteps) {
                 if (savedOldAngle > savedNewAngle) {
-                    iterator = movementCountSteps * -1
+                    iterator = (movementCountSteps) * -1
                 }
                 angle = (savedOldAngle + iterator).coerceIn(
-                    minimumValue = (initialChosenItem * STEP) - ((items.size - 1) * STEP).toFloat(),
-                    maximumValue = (initialChosenItem * STEP).toFloat()
+                    minimumValue = (initialChosenItem * STEP) - ((items.size - 1) * STEP).toFloat() - STEP,
+                    maximumValue = (initialChosenItem * STEP).toFloat() + STEP
                 )
                 oldAngle = angle
             }
-            if (movementCountSteps.toInt() == animateMovementSteps - 1) {
+            if (movementCountSteps.toInt() == animateMovementSteps.roundToInt() - 1) {
                 isDrag = false
-
                 currentItem = initialChosenItem - (angle / STEP).toInt()
                 onItemSelected(items[currentItem])
                 heightCenter = canvasWidth * INITIAL_HEIGHT_CENTER
                 innerRadius = canvasWidth * INITIAL_INNER_RADIUS
+            } else {
+                var a = 0
             }
 
             if (movementCountSteps > animateMovementSteps - 1) {
@@ -200,9 +210,10 @@ fun Carousel(
                                             angleRoundToInt = startedAngle.roundToInt(),
                                             step = STEP
                                         ).toInt()
-                                    )
+                                    ).toFloat()
                                     savedOldAngle = oldAngle
-                                    movementMaxSteps = (animateMovementSteps + animateCircleSteps)
+                                    movementMaxSteps =
+                                        (animateMovementSteps + animateCircleSteps).toInt()
                                     movementCountSteps = 0f
                                     isDrag = true
                                     handler.post(tapRunnable)
@@ -218,14 +229,18 @@ fun Carousel(
 //                        STEP = DRAG_STEP
                         Log.i("alabama", "onDragStart")
                         if (!isAnimationActive) {
-                            innerRadius -= canvasHeight * 0.2f
-                            heightCenter -= canvasHeight * 0.2f
+                            innerRadius -= canvasHeight * REDUCE_INNER_RADIUS
+                            heightCenter -= canvasHeight * REDUCE_HEIGHT_CENTER
                             val newAngle = -atan2(
                                 circleCenter.x - it.x,
                                 circleCenter.y - it.y
                             ) * (180f / PI.toFloat())
                             startedAngle = newAngle
                             animationTargetState = INITIAL_CIRCLE_SIZE
+
+
+                            handler.post(reduceCircleRunnable)
+
                         }
                     },
                     onHorizontalDrag = { change, _ ->
@@ -256,15 +271,15 @@ fun Carousel(
                             ).coerceIn(
                                 minimumValue = (initialChosenItem * STEP) - ((items.size - 1) * STEP).toFloat(),
                                 maximumValue = (initialChosenItem * STEP).toFloat()
-                            ).roundToInt()
+                            ).toInt()
 
                             animationTargetState = INITIAL_CIRCLE_SIZE
                             animateCircleSteps =
                                 ((SELECTED_CIRCLE_SIZE - animationTargetState) / CIRCLE_ANIMATION_STEP).toInt()
                             val range =
-                                if ((savedOldAngle - savedNewAngle).toInt() == 0) 1 else (savedOldAngle - savedNewAngle).toInt()
+                                if (savedOldAngle.roundToInt() - savedNewAngle == 0) 1f else (savedOldAngle - savedNewAngle)
                             animateMovementSteps = abs(range)
-                            movementMaxSteps = (animateMovementSteps + animateCircleSteps)
+                            movementMaxSteps = (animateMovementSteps + animateCircleSteps).toInt()
                             movementCountSteps = 0f
                             isDrag = true
                             handler.post(dragRunnable)
