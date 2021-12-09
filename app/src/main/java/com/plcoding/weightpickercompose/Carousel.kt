@@ -154,10 +154,8 @@ fun Carousel(
                 onItemSelected(items[currentItem])
                 heightCenter = canvasWidth * INITIAL_HEIGHT_CENTER
                 innerRadius = canvasWidth * INITIAL_INNER_RADIUS
-            } else {
-                var a = 0
             }
-
+            
             if (movementCountSteps > animateMovementSteps - 1) {
                 if (animationTargetState < SELECTED_CIRCLE_SIZE) {
                     animationTargetState += CIRCLE_ANIMATION_STEP
