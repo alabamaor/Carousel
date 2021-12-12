@@ -86,7 +86,7 @@ fun Carousel(
     var isDrag by remember { mutableStateOf(false) }
     var animationTargetState by remember { mutableStateOf(SELECTED_CIRCLE_SIZE) }
 
-    var isAnimationActive = false
+    var isAnimationActive by remember { mutableStateOf(false) }
     var animateMovementSteps = 0f
     var animateCircleSteps = 0
     var movementMaxSteps = 0
@@ -131,6 +131,8 @@ fun Carousel(
 
     val reduceCircleRunnable: Runnable = object : Runnable {
         override fun run() {
+// reduce on -> isPressed = true
+// increase on -> isPressed = false
 
         }
     }
@@ -155,7 +157,7 @@ fun Carousel(
                 heightCenter = canvasWidth * INITIAL_HEIGHT_CENTER
                 innerRadius = canvasWidth * INITIAL_INNER_RADIUS
             }
-            
+
             if (movementCountSteps > animateMovementSteps - 1) {
                 if (animationTargetState < SELECTED_CIRCLE_SIZE) {
                     animationTargetState += CIRCLE_ANIMATION_STEP
@@ -338,10 +340,9 @@ fun Carousel(
                                 }
                             } else {
                                 currentItem = (i / STEP)
-                                expand =
-                                    if (isAnimationActive) 0f else -(abs(radiansToDegrees(radians = angleInRad).roundToInt() - MIDDLE_POINT) * 1.5f) + itemRadius / 3.5f
-                                itemTextPositionY =
-                                    if (isAnimationActive) itemRadius else y + itemRadius * 2f
+                                expand = if (isAnimationActive) 0f
+                                    else -(abs(radiansToDegrees(radians = angleInRad).roundToInt() - MIDDLE_POINT) * 1.5f) + itemRadius / 3.5f
+                                itemTextPositionY = y + itemRadius * 2f
                                 itemTextStyle = Paint().apply {
                                     color = style.textColor
                                     textSize = itemRadius * 0.5f
@@ -350,14 +351,14 @@ fun Carousel(
                             }
                             y -= expand
                             canvasItemRadius = (itemRadius + expand)
-                            Log.i(
-                                "alabama",
-                                "canvasItemRadius: $canvasItemRadius itemRadius: $itemRadius expand: $expand radiansToDegrees(radians = angleInRad): ${
-                                    radiansToDegrees(
-                                        radians = angleInRad
-                                    )
-                                }"
-                            )
+//                            Log.i("alabama",
+//                                "canvasItemRadius: $canvasItemRadius itemRadius: $itemRadius expand: $expand " +
+//                                        "radiansToDegrees(radians = angleInRad): ${
+//                                    radiansToDegrees(
+//                                        radians = angleInRad
+//                                    )
+//                                }"
+//                            )
                             if (!isDrag) {
                                 canvasItemRadius *= animationTargetState * 1.15f
                             }
