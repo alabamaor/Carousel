@@ -32,6 +32,9 @@ fun Screen(
             modifier = Modifier.size(
                 width = cardWidth,
                 height = cardHeight,
+            ).noRippleClickable(
+                onClick = {},
+                enabled = false
             )
                 .padding(horizontal = 24.dp)
 

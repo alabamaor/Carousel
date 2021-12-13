@@ -12,15 +12,19 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.Button
 import androidx.compose.material.ButtonDefaults
-import androidx.compose.material.MaterialTheme.colors
 import androidx.compose.material.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.composed
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInteropFilter
 import androidx.compose.ui.layout.ContentScale
@@ -124,7 +128,7 @@ class MainActivity : ComponentActivity() {
                     Button(
                         modifier = Modifier.pointerInteropFilter {
                             when (it.action) {
-                                MotionEvent.ACTION_DOWN ->{
+                                MotionEvent.ACTION_DOWN -> {
                                     isDrag.value = true
                                     movementOutside.value += 1
                                     true
@@ -137,106 +141,124 @@ class MainActivity : ComponentActivity() {
                             }
                         },
                         onClick = {},
-                            colors = ButtonDefaults.textButtonColors(
-                                backgroundColor = Color.Red
-                            )) {
-                            Text("MOVE RIGHT")
-                        }
+                        colors = ButtonDefaults.textButtonColors(
+                            backgroundColor = Color.Red
+                        )
+                    ) {
+                        Text("MOVE RIGHT")
+                    }
 
-                            Button(
-                                modifier = Modifier.pointerInteropFilter {
-                                    when (it.action) {
-                                        MotionEvent.ACTION_DOWN -> {
-                                            isDrag.value = true
-                                            movementOutside.value -= 1
-                                            true
-                                        }
-                                        else -> {
-                                            isDrag.value = false
-                                            movementOutside.value = 0
-                                            true
-                                        }
-                                    }
-                                },
-                                onClick = {},
-                                colors = ButtonDefaults.textButtonColors(
-                                    backgroundColor = Color.Red
-                                )
-                            ) {
-                                Text("MOVE LEFT")
+                    Button(
+                        modifier = Modifier.pointerInteropFilter {
+                            when (it.action) {
+                                MotionEvent.ACTION_DOWN -> {
+                                    isDrag.value = true
+                                    movementOutside.value -= 1
+                                    true
+                                }
+                                else -> {
+                                    isDrag.value = false
+                                    movementOutside.value = 0
+                                    true
+                                }
                             }
-                        }
+                        },
+                        onClick = {},
+                        colors = ButtonDefaults.textButtonColors(
+                            backgroundColor = Color.Red
+                        )
+                    ) {
+                        Text("MOVE LEFT")
+                    }
+                }
 
-                                Box (
-                                modifier = Modifier.fillMaxWidth()
-                                    .fillMaxHeight(fraction = 0.65f)
-                                    .align(Alignment.Center)
-                                ) {
-                            CardsRowLayout(
-                                cardWidth = (screenWidth.value * 0.9).dp,
-                                cardHeight = (screenHeight.value * 0.63).dp,
-                                screens = items,
-                                selectedScreen = chosenCarouselValue.value,
-                                onSelectedScreenChanged = ::onSelectedCategoryChanged
-                            )
-                        }
-
-                                Carousel (
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .fillMaxHeight(fraction = 0.25f)
-                                    .align(Alignment.BottomCenter),
-//                    initialChosenItem = rnd,
-                        context = applicationContext,
+                Box(
+                    modifier = Modifier.fillMaxWidth()
+                        .fillMaxHeight(fraction = 0.65f)
+                        .align(Alignment.Center)
+                ) {
+                    CardsRowLayout(
                         canvasWidth = resources.displayMetrics.widthPixels.toFloat(),
-                        canvasHeight = resources.displayMetrics.heightPixels * 0.25f,
-                        style = CarouselStyle(),
-                        items = items,
-                        onItemSelectedPressed = { onItemSelectedPressed(it) },
-                        onItemSelected = {
-                            chosenCarouselValue.value = it
-                            Log.i(
-                                "alabama",
-                                "chosenCarouselValue: ${chosenCarouselValue.value.unSelectedText}"
-                            )
+                        cardWidth = (screenWidth.value * 0.7).dp,
+                        cardHeight = (screenHeight.value * 0.63).dp,
+                        screens = items,
+                        selectedScreen = chosenCarouselValue.value,
+                        onSelectedScreenChanged = ::onSelectedCategoryChanged,
+                        onDrag = {
+                            isDrag.value = true
+                            movementOutside.value += it
                         },
-                        onAngleChangeInside = {
-                            movementInside.value = it
-                            Log.i("alabama", "angle: $it")
+                        onDragEnd = {
+                            isDrag.value = false
+                            movementOutside.value = 0
                         },
-                        isDragOutside = isDrag.value,
-                        onAngleChangeOutside = movementOutside.value
                     )
                 }
+
+                Carousel(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .fillMaxHeight(fraction = 0.25f)
+                        .align(Alignment.BottomCenter),
+//                    initialChosenItem = rnd,
+                    context = applicationContext,
+                    canvasWidth = resources.displayMetrics.widthPixels.toFloat(),
+                    canvasHeight = resources.displayMetrics.heightPixels * 0.25f,
+                    style = CarouselStyle(),
+                    items = items,
+                    onItemSelectedPressed = { onItemSelectedPressed(it) },
+                    onItemSelected = {
+                        chosenCarouselValue.value = it
+                    },
+                    onAngleChangeInside = {
+                        movementInside.value = it
+//                        Log.i("alabama", "angle: $it")
+                    },
+                    isDragOutside = isDrag.value,
+                    onAngleChangeOutside = movementOutside.value
+                )
             }
         }
-
-        fun onItemSelectedPressed(carouselItem: CarouselItem) {
-            Toast.makeText(
-                applicationContext,
-                "click - ${carouselItem.unSelectedText}",
-                Toast.LENGTH_SHORT
-            )
-                .show()
-        }
     }
 
-    fun onSelectedCategoryChanged(item: CarouselItem) {
-
-        selectedScreen.value = items[findIndex(items, item)]
+    fun onItemSelectedPressed(carouselItem: CarouselItem) {
+        Toast.makeText(
+            applicationContext,
+            "click - ${carouselItem.unSelectedText}",
+            Toast.LENGTH_SHORT
+        )
+            .show()
     }
+}
 
-    fun findIndex(arr: Array<CarouselItem>, item: CarouselItem): Int {
-        return arr.indexOf(item)
-    }
+fun onSelectedCategoryChanged(item: CarouselItem) {
 
-    fun getScreenHeight(activity: Activity): Int {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            val windowMetrics = activity.windowManager.currentWindowMetrics
-            val insets: Insets = windowMetrics.windowInsets
-                .getInsetsIgnoringVisibility(WindowInsets.Type.systemBars())
-            windowMetrics.bounds.height() - insets.top - insets.bottom
-        } else {
-            activity.resources.displayMetrics.heightPixels
-        }
+    selectedScreen.value = items[findIndex(items, item)]
+}
+
+fun findIndex(arr: Array<CarouselItem>, item: CarouselItem): Int {
+    return arr.indexOf(item)
+}
+
+fun getScreenHeight(activity: Activity): Int {
+    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+        val windowMetrics = activity.windowManager.currentWindowMetrics
+        val insets: Insets = windowMetrics.windowInsets
+            .getInsetsIgnoringVisibility(WindowInsets.Type.systemBars())
+        windowMetrics.bounds.height() - insets.top - insets.bottom
+    } else {
+        activity.resources.displayMetrics.heightPixels
     }
+}
+
+inline fun Modifier.noRippleClickable(
+    enabled: Boolean = true,
+    noinline onClick: () -> Unit
+): Modifier = composed {
+    clickable(
+        enabled = enabled,
+        indication = null,
+        interactionSource = remember { MutableInteractionSource() },
+        onClick = onClick
+    )
+}
