@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">WeightPickerCompose</string>
+    <string name="vertical_pager_with_indicator_title">Some Title</string>
 </resources>

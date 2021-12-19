@@ -47,7 +47,7 @@ fun Carousel(
     canvasWidth: Float,
     canvasHeight: Float,
     style: CarouselStyle = CarouselStyle(),
-    items: Array<CarouselItem> = arrayOf(),
+    items: List<CarouselItem> = listOf(),
     initialChosenItem: Int = (items.size - 1) / 2,
     onItemSelected: (CarouselItem) -> Unit,
     onAngleChangeInside: (Int) -> Unit,
@@ -326,6 +326,7 @@ fun Carousel(
                                     circleCenter.y - change.position.y
                                 ) * (180f / PI.toFloat())
                             )
+                            Log.i("alabama", "dragOffset: $change")
                         }
                     },
                     onDragEnd = {
@@ -539,7 +540,7 @@ fun radiansToDegrees(radians: Float): Float {
 fun getCurrentItemByClick(
     x: Float,
     y: Float,
-    items: Array<CarouselItem>,
+    items: List<CarouselItem>,
     xRadius: Float,
     yRadius: Float
 ): CarouselItem? {
