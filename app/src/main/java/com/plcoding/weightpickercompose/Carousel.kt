@@ -102,7 +102,7 @@ fun Carousel(
     val tapRunnable: Runnable = object : Runnable {
         override fun run() {
             var iterator = movementCountSteps
-            if (movementCountSteps < animateMovementSteps) {
+            if (movementCountSteps <= animateMovementSteps) {
                 if (startedAngle > 0) {
                     iterator = movementCountSteps * -1
                 }
@@ -111,7 +111,7 @@ fun Carousel(
                     minimumValue = initial - maxStep.toFloat(),
                     maximumValue = initial.toFloat()
                 )
-                onAngleChangeInside(angle.roundToInt())
+                onAngleChangeInside(angle.toInt())
                 oldAngle = angle
             }
             if (movementCountSteps == animateMovementSteps - 1f) {
@@ -186,7 +186,7 @@ fun Carousel(
     val dragEndRunnable: Runnable = object : Runnable {
         override fun run() {
             var iterator = movementCountSteps
-            if (movementCountSteps < animateMovementSteps) {
+            if (movementCountSteps <= animateMovementSteps) {
                 if (savedOldAngle > savedNewAngle) {
                     iterator = movementCountSteps * -1
                 }
@@ -194,7 +194,7 @@ fun Carousel(
                     minimumValue = initial - (maxStep).toFloat() - STEP,
                     maximumValue = initial.toFloat() + STEP
                 )
-                onAngleChangeInside(angle.roundToInt())
+                onAngleChangeInside(angle.toInt())
                 oldAngle = angle
             }
             if (movementCountSteps.toInt() == animateMovementSteps.roundToInt() - 1) {
@@ -234,7 +234,7 @@ fun Carousel(
                     minimumValue = initial - (STEP + (maxStep)).toFloat(),
                     maximumValue = initial - (minStep - STEP).toFloat()
                 )
-            onAngleChangeInside(angle.roundToInt())
+            onAngleChangeInside(angle.toInt())
         }
     }
     val startDragEndAnimation = {
@@ -326,7 +326,7 @@ fun Carousel(
                                     circleCenter.y - change.position.y
                                 ) * (180f / PI.toFloat())
                             )
-                            Log.i("alabama", "dragOffset: $change")
+//                            Log.i("alabama", "dragOffset: $change")
                         }
                     },
                     onDragEnd = {
@@ -350,7 +350,7 @@ fun Carousel(
                         minimumValue = initial - (STEP + (maxStep)).toFloat(),
                         maximumValue = initial - (0 - STEP).toFloat()
                     )
-                onAngleChangeInside(angle.roundToInt())
+                onAngleChangeInside(angle.toInt())
             }
         } else {
             if (isCancelDragOutsideFlag) {
