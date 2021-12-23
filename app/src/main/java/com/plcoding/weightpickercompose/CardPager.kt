@@ -24,7 +24,7 @@ import kotlin.math.ceil
 import kotlin.math.roundToInt
 
 @Composable
-fun <T : Any> Pager(
+fun <T : Any> CardPager(
     items: List<T>,
     modifier: Modifier = Modifier,
     orientation: Orientation = Orientation.Horizontal,
@@ -60,10 +60,7 @@ fun <T : Any> Pager(
         content = {
             items.map { item ->
                 Box(
-                    modifier = when (orientation) {
-                        Orientation.Horizontal -> Modifier.fillMaxWidth()
-                        Orientation.Vertical -> Modifier.fillMaxHeight()
-                    },
+                    modifier = Modifier.fillMaxWidth().fillMaxHeight(),
                     contentAlignment = Alignment.Center,
                 ) {
                     contentFactory(item)
@@ -120,6 +117,7 @@ fun <T : Any> Pager(
                     ((dimension + dragOffset - centerOffset) / itemDimensionWithSpace).toInt()
                         .coerceAtMost(items.lastIndex)
                 for (i in first..last) {
+                    Log.i("alabama", "Pager - $i")
                     val offset = i * (itemDimension + spacing) - roundedDragOffset + centerOffset
                     placeables[i].place(
                         x = when (orientation) {

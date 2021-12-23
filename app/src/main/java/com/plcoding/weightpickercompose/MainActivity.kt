@@ -1,21 +1,23 @@
 package com.plcoding.weightpickercompose
 
-import Sample
 import android.app.Activity
 import android.graphics.Insets
 import android.os.Build
 import android.os.Bundle
-import android.util.Log
-import android.view.MotionEvent
 import android.view.WindowInsets
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.*
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.*
+import androidx.compose.material.Card
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Text
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -24,16 +26,14 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.pointerInteropFilter
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.blue
 import androidx.core.graphics.green
 import androidx.core.graphics.red
 import com.google.accompanist.pager.ExperimentalPagerApi
-import com.google.accompanist.pager.rememberPagerState
+import kotlin.math.abs
 import kotlin.time.ExperimentalTime
 
 
@@ -81,7 +81,7 @@ var items: List<CarouselItem> = listOf(
         selectedTextBottom = "שטיפומט"
     }
 )
-
+val CARD_STEP = 0.01f
 var selectedScreen: MutableState<CarouselItem?> = mutableStateOf(items[items.size / 2])
 var movementFromCarousel: MutableState<Int> = mutableStateOf(0)
 var movementFromCard: MutableState<Int> = mutableStateOf(0)
@@ -98,25 +98,15 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         setContent {
-            val configuration = LocalConfiguration.current
-
-            var chosenCarouselValue = remember {
+            var currentCarouselItem = remember {
                 mutableStateOf(items[items.size / 2])
             }
-
-            val dm = resources.displayMetrics
-
-            val screenHeight = configuration.screenHeightDp.dp
-            val screenWidth = configuration.screenWidthDp.dp
-
-
-//            var rnd by remember { mutableStateOf(Random.nextInt(0, items.size))}
-//            Handler(Looper.myLooper()!!).postDelayed({ rnd = Random.nextInt(0, items.size) }, 1000L)
-// Display 10 items
+            var scrollCurrentCarouselItem = remember {
+                mutableStateOf(items[items.size / 2])
+            }
             var initialChosenItem = remember { mutableStateOf(items.size / 2) }
-            var pagerState = rememberPagerState(
-                initialPage = initialChosenItem.value,
-            )
+
+            var oldPosition = movementFromCarousel.value
 
             Box(
                 modifier = Modifier
@@ -129,95 +119,108 @@ class MainActivity : ComponentActivity() {
                     contentDescription = "",
                     contentScale = ContentScale.FillBounds
                 )
-                Row(
-                    modifier = Modifier.fillMaxWidth()
-                        .fillMaxHeight(fraction = 0.1f),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-//                    HorizontalPager()
-                /*    Button(
-                        modifier = Modifier.pointerInteropFilter {
-                            when (it.action) {
-                                MotionEvent.ACTION_DOWN -> {
-                                    isDrag.value = true
-                                    movementFromCard.value += 1
-                                    true
-                                }
-                                else -> {
-                                    isDrag.value = false
-                                    movementFromCard.value = 0
-                                    true
-                                }
-                            }
-                        },
-                        onClick = {},
-                        colors = ButtonDefaults.textButtonColors(
-                            backgroundColor = Color.Red
-                        )
-                    ) {
-                        Text("MOVE RIGHT")
-                    }
-
-                    Button(
-                        modifier = Modifier.pointerInteropFilter {
-                            when (it.action) {
-                                MotionEvent.ACTION_DOWN -> {
-                                    isDrag.value = true
-                                    movementFromCard.value -= 1
-                                    true
-                                }
-                                else -> {
-                                    isDrag.value = false
-                                    movementFromCard.value = 0
-                                    true
-                                }
-                            }
-                        },
-                        onClick = {},
-                        colors = ButtonDefaults.textButtonColors(
-                            backgroundColor = Color.Red
-                        )
-                    ) {
-                        Text("MOVE LEFT")
-                    }*/
-                }
-
-                Box(
-                    modifier = Modifier.fillMaxWidth()
-                        .fillMaxHeight(fraction = 0.95f)
-                ) {
-                    Pager(
-                        items = items,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .fillMaxHeight(),
-                        itemFraction = .75f,
-                        overshootFraction = 1f,
-                        initialIndex = initialChosenItem.value,
-                        itemSpacing = 16.dp,
-                        onChangeInside = { isDraggable, offset ->
+                CardPager(
+                    items = items,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .fillMaxHeight(fraction = 0.95f),
+                    itemFraction = .75f,
+                    overshootFraction = 1f,
+                    initialIndex = initialChosenItem.value,
+                    itemSpacing = 16.dp,
+                    onChangeInside = { isDraggable, offset ->
 //                            movementFromCarousel.value = offset
-                            movementFromCard.value = offset
-                            isDrag.value = isDraggable
-//                        Log.i("alabama", "angle: $it")
-                        },
-                        onChangeOutside = movementFromCarousel.value,
-                        contentFactory = { item ->
-                            Card(shape = RoundedCornerShape(30.dp),
-//                                border = BorderStroke(width = 2.dp, color = Color.Blue),
-                                modifier = Modifier
-                                    .fillMaxHeight(fraction = 0.75f)
-                                    .fillMaxWidth(fraction = 0.95f)
+                        movementFromCard.value = offset
+                        isDrag.value = isDraggable
+//                       Log.i(
+//                            "alabama",
+//                            "movementFromCard: $offset, movementFromCarousel: ${movementFromCarousel.value}"
+//                        )
+                    },
+                    onChangeOutside = movementFromCarousel.value,
+                    contentFactory = { item ->
+//                        var calcHeight = 0f
+////                        val indexOfItem = items.indexOf(scrollCurrentCarouselItem.value)
+//                        var movement: Int = getRangeStep(value = movementFromCarousel.value, index = initialChosenItem.value, step = 25) % 25
+//                        if (movement <= 0.1f * 25) {
+//                            maxHeight += movement.toFloat() * 0.005f
+//                        } else if (movement >= 0.9f * 25) {
+//                            calcHeight -= movement.toFloat() * 0.005f
+//                        }else{
+//                            calcHeight +=0.1f
+//                        }
+//                        Log.i(
+//                            "alabama",
+//                            "movement: $movement"
+//                        )
 
-                                    .align(Alignment.Center)
-                                    .padding(vertical = 10.dp)
-                                    .coloredShadow(
+//                            calcHeight = ( abs(movementFromCarousel.value) % 25) * 0.005f
+
+//                        else if (indexOfItem == items.indexOf(item) - 1 && indexOfItem == items.indexOf(
+//                                item
+//                            ) + 1
+//                        ) {
+//                            calcHeight = -(25 - abs(movementFromCarousel.value) % 25) * 0.005f
+//                        }
+
+//                        Log.i(
+//                            "alabama",
+//                            "movementFromCarousel: ${movementFromCarousel.value} movementFromCard: ${movementFromCard.value} calcHeight: $calcHeight, items.indexOf(item): ${
+//                                items.indexOf(
+//                                    item
+//                                )
+//                            }"
+//                        )
+                        var maxHeight = 0.75f
+                        var movement: Int = getRangeStep(
+                            value = movementFromCarousel.value,
+                            index = initialChosenItem.value,
+                            step = 25
+                        ) % 25
+
+//
+//                        Log.i(
+//                            "alabama",
+//                            "movementFromCarousel - ${movementFromCarousel.value}"
+//                        )
+
+                        val minStep = (25 * 0.3).toInt()
+                        val maxStep = (25 * 0.7).toInt()
+                        val currentStep = abs(movementFromCarousel.value % 25)
+
+//                        if (scrollCurrentCarouselItem.value != item) {
+//                            maxHeight = 0.75f - ((minStep ) * CARD_STEP)
+//                            Log.i("alabama", "scrollCurrentCarouselItem.value != item -> maxHeight: $maxHeight")
+//                        } else if (minStep >= currentStep && currentStep < maxStep) {
+//                            maxHeight = 0.75f
+//                            Log.i("alabama", "minStep >= currentStep && currentStep < maxStep -> maxHeight: $maxHeight")
+//                        } else {
+//                            if (currentStep < minStep) {
+//                                maxHeight -= (minStep - currentStep) * CARD_STEP
+//                            } else {
+//                                maxHeight -= (currentStep - maxStep) * CARD_STEP
+//                            }
+//                            Log.i("alabama", "else -> maxHeight: $maxHeight")
+//                        }
+
+                        Card(
+                            shape = RoundedCornerShape(30.dp),
+                            modifier = Modifier
+                                .fillMaxHeight(fraction = maxHeight)
+                                .fillMaxWidth(fraction = 0.95f)
+                                .padding(vertical = 10.dp)
+                                .coloredShadow(
                                     color = Color(0x371d4773),
-                                        shadowRadius = 15.dp,
+                                    shadowRadius = 15.dp,
                                     alpha = 0.1f
                                 ),
+                        ) {
+                            Column(
+                                verticalArrangement = Arrangement.Center,
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                modifier = Modifier.padding(all = 16.dp)
+                                    .align(Alignment.Center),
                             ) {
-//                                Log.i("alabama", "txt: $item.unSelectedText")
                                 Text(
                                     text = item.unSelectedText,
                                     color = Color(
@@ -225,13 +228,13 @@ class MainActivity : ComponentActivity() {
                                         green = item.color.green,
                                         blue = item.color.blue
                                     ),
-                                    modifier = Modifier.padding(all = 16.dp),
                                     style = MaterialTheme.typography.h6,
                                 )
                             }
+
                         }
-                    )
-                }
+                    }
+                )
 
                 Carousel(
                     modifier = Modifier
@@ -247,17 +250,41 @@ class MainActivity : ComponentActivity() {
                     initialChosenItem = initialChosenItem.value,
                     onItemSelectedPressed = { onItemSelectedPressed(it) },
                     onItemSelected = {
-                        chosenCarouselValue.value = it
+                        currentCarouselItem.value = it
                     },
                     onAngleChangeInside = {
                         movementFromCarousel.value = it
-                        Log.i("alabama", "onAngleChangeInside: $it")
+                    },
+                    onScroll = {
+                        scrollCurrentCarouselItem.value = it
                     },
                     onAngleChangeOutside = movementFromCard.value,
                     isDragOutside = isDrag.value,
                 )
             }
         }
+    }
+
+    @Composable
+    fun draw(item: CarouselItem, modifier: Modifier) {
+        Text(
+            text = item.unSelectedText,
+            color = Color(
+                red = item.color.red,
+                green = item.color.green,
+                blue = item.color.blue
+            ),
+            modifier = modifier,
+        )
+
+    }
+
+
+    private fun getRangeStep(value: Int, index: Int, step: Int): Int {
+        if (value <= 0) {
+            return abs(value)
+        }
+        return abs(index * step) + value
     }
 
     fun onItemSelectedPressed(carouselItem: CarouselItem) {
@@ -267,15 +294,6 @@ class MainActivity : ComponentActivity() {
             Toast.LENGTH_SHORT
         )
             .show()
-    }
-
-    fun onSelectedCategoryChanged(item: CarouselItem) {
-
-        selectedScreen.value = items[findIndex(items, item)]
-    }
-
-    fun findIndex(arr: List<CarouselItem>, item: CarouselItem): Int {
-        return arr.indexOf(item)
     }
 }
 

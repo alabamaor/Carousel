@@ -51,6 +51,7 @@ fun Carousel(
     initialChosenItem: Int = (items.size - 1) / 2,
     onItemSelected: (CarouselItem) -> Unit,
     onAngleChangeInside: (Int) -> Unit,
+    onScroll: (CarouselItem) -> Unit,
     isDragOutside: Boolean,
     onAngleChangeOutside: Int,
     onItemSelectedPressed: (CarouselItem) -> Unit
@@ -197,7 +198,7 @@ fun Carousel(
                 onAngleChangeInside(angle.toInt())
                 oldAngle = angle
             }
-            if (movementCountSteps.toInt() == animateMovementSteps.roundToInt() - 1) {
+            if (movementCountSteps.toInt() == animateMovementSteps.roundToInt()) {
                 heightCenter = canvasWidth * INITIAL_HEIGHT_CENTER
                 innerRadius = canvasWidth * INITIAL_INNER_RADIUS
                 angle = (savedNewAngle).coerceIn(
@@ -209,6 +210,7 @@ fun Carousel(
 
                 isDrag = false
                 currentItem = initialChosenItem - (angle / STEP).toInt()
+                onScroll(items[currentItem])
                 onItemSelected(items[currentItem])
             }
 
@@ -266,7 +268,6 @@ fun Carousel(
             .pointerInput(true) {
                 detectTapGestures(
                     onPress = {
-                        Log.i("alabama", "onPress")
                         if (!isAnimationActive) {
                             val newAngle = -atan2(
                                 circleCenter.x - it.x,
@@ -276,7 +277,6 @@ fun Carousel(
                         }
                     },
                     onTap = {
-                        Log.i("alabama", "onTap")
                         if (!isAnimationActive) {
                             itemSelected = getCurrentItemByClick(
                                 x = it.x,
@@ -305,7 +305,6 @@ fun Carousel(
             .pointerInput(true) {
                 detectHorizontalDragGestures(
                     onDragStart = {
-                        Log.i("alabama", "onDragStart")
                         if (!isAnimationActive) {
                             innerRadius -= canvasHeight * REDUCE_INNER_RADIUS
                             heightCenter -= canvasHeight * REDUCE_HEIGHT_CENTER
@@ -326,11 +325,9 @@ fun Carousel(
                                     circleCenter.y - change.position.y
                                 ) * (180f / PI.toFloat())
                             )
-//                            Log.i("alabama", "dragOffset: $change")
                         }
                     },
                     onDragEnd = {
-                        Log.i("alabama", "onDragEnd")
                         if (!isAnimationActive) {
                             startDragEndAnimation()
                         }
@@ -425,6 +422,7 @@ fun Carousel(
                             if (!isDrag) {
                                 canvasItemRadius *= animationTargetState * 1.15f
                             }
+                            onScroll(items[currentItem])
                         }
                         else -> {
                             if (i / STEP == currentItem + 1 && !isDrag) {
