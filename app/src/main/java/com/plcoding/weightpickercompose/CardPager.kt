@@ -59,6 +59,7 @@ fun <T : Any> CardPager(
     Layout(
         content = {
             items.map { item ->
+//                Log.i("alabama", "Pager - $item")
                 Box(
                     modifier = Modifier.fillMaxWidth().fillMaxHeight(),
                     contentAlignment = Alignment.Center,
@@ -117,7 +118,7 @@ fun <T : Any> CardPager(
                     ((dimension + dragOffset - centerOffset) / itemDimensionWithSpace).toInt()
                         .coerceAtMost(items.lastIndex)
                 for (i in first..last) {
-                    Log.i("alabama", "Pager - $i")
+//                    Log.i("alabama", "Pager - $i")
                     val offset = i * (itemDimension + spacing) - roundedDragOffset + centerOffset
                     placeables[i].place(
                         x = when (orientation) {
