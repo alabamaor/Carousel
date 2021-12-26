@@ -12,14 +12,12 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
@@ -96,34 +94,28 @@ class MainActivity : ComponentActivity() {
                 contentDescription = "",
                 contentScale = ContentScale.FillBounds
             )
-            Box(
-                modifier = Modifier
-                    .fillMaxHeight()
+            CarouselView(
+                Modifier
+                    .fillMaxHeight(fraction = 1f)
                     .fillMaxWidth(),
-            ) {
-                CarouselView(
-                    modifier = Modifier
-                        .fillMaxHeight(fraction = 0.9f)
-                        .fillMaxWidth().align(alignment = Alignment.BottomEnd),
-                    items = items,
-                    resources = resources,
-                    onItemSelectedPressed = { item: CarouselItem ->
-                        Toast.makeText(
-                            applicationContext,
-                            "click - ${item.unSelectedText}",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    },
-                    onItemSelected = { item ->
-                        Toast.makeText(
-                            applicationContext,
-                            "Selected - ${item.unSelectedText}",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    },
-                    applicationContext = applicationContext,
-                )
-            }
+                items = items,
+                resources = resources,
+                onItemSelectedPressed = { item: CarouselItem ->
+                    Toast.makeText(
+                        applicationContext,
+                        "click - ${item.unSelectedText}",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                },
+                onItemSelected = { item ->
+                    Toast.makeText(
+                        applicationContext,
+                        "Selected - ${item.unSelectedText}",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                },
+                applicationContext = applicationContext,
+            )
         }
     }
 

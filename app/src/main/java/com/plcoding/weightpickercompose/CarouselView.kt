@@ -52,8 +52,8 @@ fun CarouselView(
     var initialChosenItem = remember { mutableStateOf(items.size / 2) }
 
     var oldPosition = movementFromCarousel.value
-    Box(
-        modifier = modifier
+
+    Box(modifier = modifier
     ) {
 
         CardPager(
