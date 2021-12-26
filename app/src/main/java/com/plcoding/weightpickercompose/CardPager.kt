@@ -1,7 +1,6 @@
 package com.plcoding.weightpickercompose
 
 import android.util.Log
-import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Box
@@ -20,13 +19,15 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.CoroutineScope
+import kotlin.math.abs
 import kotlin.math.ceil
 import kotlin.math.roundToInt
 
 @Composable
 fun <T : Any> CardPager(
-    items: List<T>,
     modifier: Modifier = Modifier,
+    items: List<T>,
+    step: Float = 25f,
     orientation: Orientation = Orientation.Horizontal,
     initialIndex: Int = 0,
     /*@FloatRange(from = 0.0, to = 1.0)*/
@@ -56,6 +57,9 @@ fun <T : Any> CardPager(
     var offset = onChangeOutside.toFloat()
     var currentDragPointX = offset
     var itemDimensionWithSpace = 500f
+    var currentIndex = remember { mutableStateOf(initialIndex) }
+    var sumMovement = remember { mutableStateOf(0f) }
+
     Layout(
         content = {
             items.map { item ->
@@ -73,16 +77,27 @@ fun <T : Any> CardPager(
                 detectDragGestures(
                     onDragStart = {
                         currentDragPointX = it.x
+                        sumMovement.value = 0f
+                        currentIndex.value = state.currentIndex
                     },
                     onDrag = { change, dragAmount ->
-                        if (currentDragPointX + (itemDimensionWithSpace / 25) < change.position.x) {
-                            currentDragPointX = change.position.x
-                            offset = 1f
-                        } else if (currentDragPointX - (itemDimensionWithSpace / 25) > change.position.x) {
-                            currentDragPointX = change.position.x
-                            offset = -1f
+                        if (abs(sumMovement.value) < abs( step * 0.5f) ) {
+                            if (currentDragPointX + (itemDimensionWithSpace / 25) < change.position.x) {
+                                currentDragPointX = change.position.x
+                                offset = 1f
+                                onChangeInside(true, offset.toInt())
+
+                            } else if (currentDragPointX - (itemDimensionWithSpace / 25) > change.position.x) {
+                                currentDragPointX = change.position.x
+                                offset = -1f
+                                onChangeInside(true, offset.toInt())
+
+                            }
+                            sumMovement.value += offset
+                            Log.i("alabama", "sumMovement: ${sumMovement.value}")
+                        }else{
+                            onChangeInside(false, offset.toInt())
                         }
-                        onChangeInside(true, offset.toInt())
                     },
                     onDragEnd = {
                         onChangeInside(false, offset.toInt())
@@ -106,17 +121,16 @@ fun <T : Any> CardPager(
                 val spacing = state.itemSpacing.roundToInt()
                 itemDimensionWithSpace = itemDimension + state.itemSpacing
                 state.dragOffset =
-                    (itemDimensionWithSpace * initialIndex) - (offset * itemDimensionWithSpace / 25)//state.dragOffset.value
+                    (itemDimensionWithSpace * initialIndex) - (offset * itemDimensionWithSpace / step)
 
-                val dragOffset = state.dragOffset
-                state.dragOffsett.value * (itemDimension / 25f)
-                val roundedDragOffset = dragOffset.roundToInt()
+                val roundedDragOffset = state.dragOffset.roundToInt()
                 val first =
-                    ceil((dragOffset - itemDimension - centerOffset) / itemDimensionWithSpace).toInt()
+                    ceil((state.dragOffset - itemDimension - centerOffset) / itemDimensionWithSpace).toInt()
                         .coerceAtLeast(0)
                 val last =
-                    ((dimension + dragOffset - centerOffset) / itemDimensionWithSpace).toInt()
+                    ((dimension + state.dragOffset - centerOffset) / itemDimensionWithSpace).toInt()
                         .coerceAtMost(items.lastIndex)
+                state.currentIndex = first + 1
                 for (i in first..last) {
 //                    Log.i("alabama", "Pager - $i")
                     val offset = i * (itemDimension + spacing) - roundedDragOffset + centerOffset
@@ -193,7 +207,7 @@ private class PagerState {
     var scope: CoroutineScope? by mutableStateOf(null)
     var listener: (Int) -> Unit by mutableStateOf({})
     var dragOffset = 0f
-    var dragOffsett = Animatable(dragOffset)
+//    var dragOffsett = Animatable(dragOffset)
 
     //    private val animationSpec = SpringSpec<Float>(
 //        dampingRatio = Spring.DampingRatioLowBouncy,
@@ -216,7 +230,8 @@ private class PagerState {
                 listener(index)
             }
         }
-
+    }
+}
 //        fun calculateOffsetLimit(): OffsetLimit {
 //            val dimension = when (orientation) {
 //                Orientation.Horizontal -> size.width
@@ -274,8 +289,8 @@ private class PagerState {
 //                    }
 //                }
 //            }
-    }
-}
+//    }
+//}
 //
 //    data class OffsetLimit(
 //        val min: Float,

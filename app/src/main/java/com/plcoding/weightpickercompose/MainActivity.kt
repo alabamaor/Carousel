@@ -12,10 +12,8 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.*
+import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -26,6 +24,7 @@ import androidx.compose.ui.composed
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
 import androidx.core.graphics.blue
 import androidx.core.graphics.green
 import androidx.core.graphics.red
@@ -96,15 +95,26 @@ class MainActivity : ComponentActivity() {
                 contentDescription = "",
                 contentScale = ContentScale.FillBounds
             )
-            Box(
+            Column(
                 modifier = Modifier
                     .fillMaxHeight()
-                    .fillMaxWidth(),
+                    .fillMaxWidth()
+                ,
+                horizontalAlignment = Alignment.Start,
+                verticalArrangement = Arrangement.Bottom
             ) {
+                Image(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .fillMaxHeight(fraction = 0.1f),
+                    painter = painterResource(R.drawable.ic_icon_background),
+                    contentDescription = "",
+                    contentScale = ContentScale.FillBounds
+                )
                 CarouselView(
                     modifier = Modifier
-                        .fillMaxHeight(fraction = 0.9f)
-                        .fillMaxWidth().align(alignment = Alignment.BottomEnd),
+                        .fillMaxWidth()
+                        .fillMaxHeight(fraction = 0.9f),
                     items = items,
                     resources = resources,
                     onItemSelectedPressed = { item: CarouselItem ->
@@ -122,6 +132,18 @@ class MainActivity : ComponentActivity() {
                         ).show()
                     },
                     applicationContext = applicationContext,
+                    screenContent = { item: CarouselItem ->
+                       Text(
+                                text = item.unSelectedText,
+                                color = Color(
+                                    red = item.color.red,
+                                    green = item.color.green,
+                                    blue = item.color.blue
+                                ),
+                                style = MaterialTheme.typography.h6,
+                            )
+
+                    }
                 )
             }
         }

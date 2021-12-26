@@ -7,8 +7,6 @@ import android.util.TypedValue
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Card
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
@@ -18,9 +16,6 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import androidx.core.graphics.blue
-import androidx.core.graphics.green
-import androidx.core.graphics.red
 import kotlin.math.abs
 import kotlin.time.ExperimentalTime
 
@@ -28,28 +23,26 @@ import kotlin.time.ExperimentalTime
 @ExperimentalComposeUiApi
 @ExperimentalTime
 @Composable
-fun CarouselView(
+fun <T : Any?> CarouselView(
     modifier: Modifier = Modifier,
     items: List<CarouselItem> = listOf(),
     onItemSelectedPressed: (CarouselItem) -> Unit,
     onItemSelected: (CarouselItem) -> Unit,
     applicationContext: Context,
+    screenContent: @Composable (T) -> Unit,
     resources: Resources
 ) {
-    val CARD_STEP = 0.01f
-    var selectedScreen: MutableState<CarouselItem?> =
-        remember { mutableStateOf(items[items.size / 2]) }
-    var movementFromCarousel: MutableState<Int> = remember { mutableStateOf(0) }
-    var movementFromCard: MutableState<Int> = remember { mutableStateOf(0) }
-    var isDrag: MutableState<Boolean> = remember { mutableStateOf(false) }
+    val movementFromCarousel: MutableState<Int> = remember { mutableStateOf(0) }
+    val movementFromCard: MutableState<Int> = remember { mutableStateOf(0) }
+    val isDrag: MutableState<Boolean> = remember { mutableStateOf(false) }
 
-    var currentCarouselItem = remember {
+    val currentCarouselItem = remember {
         mutableStateOf(items[items.size / 2])
     }
-    var scrollCurrentCarouselItem = remember {
+    val scrollCurrentCarouselItem = remember {
         mutableStateOf(items[items.size / 2])
     }
-    var initialChosenItem = remember { mutableStateOf(items.size / 2) }
+    val initialChosenItem = remember { mutableStateOf(items.size / 2) }
 
     var oldPosition = movementFromCarousel.value
     Box(
@@ -64,15 +57,10 @@ fun CarouselView(
             itemFraction = .75f,
             overshootFraction = 1f,
             initialIndex = initialChosenItem.value,
-            itemSpacing = 16.dp,
+            itemSpacing = 30.dp,
             onChangeInside = { isDraggable, offset ->
-//                            movementFromCarousel.value = offset
                 movementFromCard.value = offset
                 isDrag.value = isDraggable
-//                       Log.i(
-//                            "alabama",
-//                            "movementFromCard: $offset, movementFromCarousel: ${movementFromCarousel.value}"
-//                        )
             },
             onChangeOutside = movementFromCarousel.value,
             contentFactory = { item ->
@@ -108,18 +96,12 @@ fun CarouselView(
 //                                )
 //                            }"
 //                        )
-                var maxHeight = 0.65f
+                var maxHeight = 0.75f
                 var movement: Int = getRangeStep(
                     value = movementFromCarousel.value,
                     index = initialChosenItem.value,
                     step = 25
                 ) % 25
-
-//
-//                        Log.i(
-//                            "alabama",
-//                            "movementFromCarousel - ${movementFromCarousel.value}"
-//                        )
 
                 val minStep = (25 * 0.3).toInt()
                 val maxStep = (25 * 0.7).toInt()
@@ -161,17 +143,9 @@ fun CarouselView(
                         verticalArrangement = Arrangement.Center,
                         horizontalAlignment = Alignment.CenterHorizontally,
                         modifier = Modifier.padding(all = 16.dp)
-                            .align(Alignment.Center),
+                            .align(Alignment.TopStart),
                     ) {
-                        Text(
-                            text = item.unSelectedText,
-                            color = Color(
-                                red = item.color.red,
-                                green = item.color.green,
-                                blue = item.color.blue
-                            ),
-                            style = MaterialTheme.typography.h6,
-                        )
+                        screenContent(item as T)
                     }
 
                 }

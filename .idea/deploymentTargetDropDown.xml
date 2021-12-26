@@ -12,14 +12,15 @@
         </deviceKey>
       </Target>
     </runningDeviceTargetSelectedWithDropDown>
-    <timeTargetWasSelectedWithDropDown value="2021-12-26T10:27:54.588582Z" />
+    <timeTargetWasSelectedWithDropDown value="2021-12-26T13:10:52.400859Z" />
+    <multipleDevicesSelectedInDropDown value="true" />
     <runningDeviceTargetsSelectedWithDialog>
       <Target>
         <type value="RUNNING_DEVICE_TARGET" />
         <deviceKey>
           <Key>
-            <type value="SERIAL_NUMBER" />
-            <value value="ad0c1603b067676a07" />
+            <type value="VIRTUAL_DEVICE_PATH" />
+            <value value="$USER_HOME$/.android/avd/s7_edge_API_30_5.5.avd" />
           </Key>
         </deviceKey>
       </Target>
