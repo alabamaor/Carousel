@@ -17,6 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.blue
 import androidx.core.graphics.green
@@ -34,6 +35,7 @@ fun CarouselView(
     onItemSelectedPressed: (CarouselItem) -> Unit,
     onItemSelected: (CarouselItem) -> Unit,
     applicationContext: Context,
+    paddingBottom: Dp,
     resources: Resources
 ) {
     val CARD_STEP = 0.01f
@@ -52,8 +54,7 @@ fun CarouselView(
     var initialChosenItem = remember { mutableStateOf(items.size / 2) }
 
     var oldPosition = movementFromCarousel.value
-
-    Box(modifier = modifier
+    Box(modifier = Modifier.fillMaxSize()
     ) {
 
         CardPager(
@@ -147,10 +148,10 @@ fun CarouselView(
 
                 Card(
                     shape = RoundedCornerShape(30.dp),
-                    modifier = Modifier
-                        .align(alignment = Alignment.Center)
+                    modifier = modifier
+                        .align(alignment = Alignment.BottomStart)
                         .fillMaxHeight(fraction = maxHeight)
-                        .fillMaxWidth()
+                        .padding(bottom = paddingBottom)
                         .coloredShadow(
                             color = Color(0x371d4773),
                             shadowRadius = 15.dp,
@@ -181,8 +182,8 @@ fun CarouselView(
         Carousel(
             modifier = Modifier
                 .fillMaxWidth()
-                .fillMaxHeight(fraction = 0.25f)
-                .align(Alignment.BottomCenter),
+                .fillMaxHeight(fraction = 0.2f)
+                .align(Alignment.BottomEnd),
 //                    initialChosenItem = rnd,
             context = applicationContext,
             canvasWidth = resources.displayMetrics.widthPixels.toFloat(),

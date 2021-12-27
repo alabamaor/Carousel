@@ -3,9 +3,7 @@ package com.plcoding.weightpickercompose
 import android.util.Log
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -65,7 +63,7 @@ fun <T : Any> CardPager(
             items.map { item ->
 //                Log.i("alabama", "Pager - $item")
                 Box(
-                    modifier = Modifier.fillMaxWidth().fillMaxHeight(),
+                    modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center,
                 ) {
                     contentFactory(item)
@@ -103,7 +101,6 @@ fun <T : Any> CardPager(
                                 "alabama",
                                 "sumMovement: ${sumMovement.value} - onChangeInside(false, ${offset.toInt()}))"
                             )
-
                             onChangeInside(false, offset.toInt())
                         }
                     },

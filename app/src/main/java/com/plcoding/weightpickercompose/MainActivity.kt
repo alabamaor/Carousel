@@ -12,18 +12,24 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.*
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.graphics.blue
 import androidx.core.graphics.green
 import androidx.core.graphics.red
@@ -88,34 +94,79 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         setContent {
-            Image(
-                modifier = Modifier.fillMaxSize(),
-                painter = painterResource(R.drawable.iparked_map_bg),
-                contentDescription = "",
-                contentScale = ContentScale.FillBounds
-            )
-            CarouselView(
-                Modifier
-                    .fillMaxHeight(fraction = 1f)
+            val configuration = LocalConfiguration.current
+            val dm = resources.displayMetrics
+
+            val screenHeight = configuration.screenHeightDp.dp
+            val screenTopHeight = 700.dp
+            val appBarSize = 150.dp
+            val cardSize = if (screenTopHeight > screenHeight) 520.dp else 550.dp
+            val cardPaddingSize = if (screenTopHeight > screenHeight) 80.dp else 100.dp
+            val additionalTextSize = if (screenHeight - appBarSize - cardSize > 50.dp) screenHeight - appBarSize - cardSize else 0.dp
+
+            Box(
+                modifier = Modifier.fillMaxHeight()
                     .fillMaxWidth(),
-                items = items,
-                resources = resources,
-                onItemSelectedPressed = { item: CarouselItem ->
-                    Toast.makeText(
-                        applicationContext,
-                        "click - ${item.unSelectedText}",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                },
-                onItemSelected = { item ->
-                    Toast.makeText(
-                        applicationContext,
-                        "Selected - ${item.unSelectedText}",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                },
-                applicationContext = applicationContext,
-            )
+            ) {
+                Image(
+                    modifier = Modifier.fillMaxSize(),
+                    painter = painterResource(R.drawable.iparked_map_bg),
+                    contentDescription = "",
+                    contentScale = ContentScale.FillBounds
+                )
+                Column(
+                    modifier = Modifier
+                        .height(appBarSize)
+                        .align(Alignment.TopCenter),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Top
+                ) {
+                    MainSearchButton(
+                        modifier = Modifier.fillMaxWidth(fraction = 0.8f)
+                            .padding(25.dp),
+                        text = "שירותי פנגו סביבך",
+                        textStyle = TextStyle(
+                            fontWeight = FontWeight.Normal,
+                            color = Color.Blue,
+                            fontSize = 16.sp
+                        )
+                    )
+
+                    Text( modifier = Modifier
+                        .height(additionalTextSize)
+                        .fillMaxWidth()
+                        .padding(all = 8.dp),
+//                        .align(alignment = Alignment.Center),
+                        text = "טקסט כלשהו שמופיע פה רק אם יש מקום",
+                        textAlign = TextAlign.Center
+                    )
+                }
+
+
+                CarouselView(
+                    Modifier
+                        .height(cardSize)
+                        .fillMaxWidth(),
+                    paddingBottom = cardPaddingSize,
+                    items = items,
+                    resources = resources,
+                    onItemSelectedPressed = { item: CarouselItem ->
+                        Toast.makeText(
+                            applicationContext,
+                            "click - ${item.unSelectedText}",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    },
+                    onItemSelected = { item ->
+                        Toast.makeText(
+                            applicationContext,
+                            "Selected - ${item.unSelectedText}",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    },
+                    applicationContext = applicationContext,
+                )
+            }
         }
     }
 
